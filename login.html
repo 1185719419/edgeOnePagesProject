@@ -170,17 +170,16 @@
           var data = await res.json();
 
           if (res.ok && data.success) {
-            showMessage('message', '登录成功，正在跳转...', 'success');
+            showMessage('message', '登录成功，正在进入...', 'success');
             localStorage.setItem('user', JSON.stringify(data.user));
-            setTimeout(function() {
-              window.location.href = '/main.html';
-            }, 800);
+            // 立即跳转，按钮保持禁用防重复点击
+            window.location.href = '/main.html';
           } else {
             showMessage('message', data.error || '登录失败', 'error');
+            setLoading(loginBtn, false);
           }
         } catch (err) {
           showMessage('message', '网络错误，请稍后重试', 'error');
-        } finally {
           setLoading(loginBtn, false);
         }
       });
@@ -226,19 +225,21 @@
           if (res.ok && data.success) {
             showMessage('regMessage', '注册成功，即将跳转到登录...', 'success');
             document.getElementById('registerForm').reset();
+            setLoading(regBtn, true);
             setTimeout(function() {
               document.getElementById('registerCard').classList.add('hidden');
               document.getElementById('loginCard').classList.remove('hidden');
               clearMessages();
               document.getElementById('username').value = username;
               document.getElementById('password').focus();
+              setLoading(regBtn, false);
             }, 1500);
           } else {
             showMessage('regMessage', data.error || '注册失败', 'error');
+            setLoading(regBtn, false);
           }
         } catch (err) {
           showMessage('regMessage', '网络错误，请稍后重试', 'error');
-        } finally {
           setLoading(regBtn, false);
         }
       });
