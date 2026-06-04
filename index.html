@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EdgeOne Pages Demo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 EdgeOne Pages Demo</h1>
+      <p class="subtitle">部署在腾讯云 EdgeOne Pages 上的示例项目</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>📄 静态页面</h2>
+        <p>EdgeOne Pages 支持托管静态网站资源。</p>
+        <p class="status success">当前页面由 EdgeOne Pages 提供</p>
+      </section>
+
+      <section class="card">
+        <h2>⚡ Edge Functions</h2>
+        <p>使用 Edge Functions 在边缘节点执行服务端逻辑。</p>
+        <div class="api-buttons">
+          <button onclick="callAPI('/hello')">调用 /hello</button>
+          <button onclick="callAPI('/api/time')">调用 /api/time</button>
+          <button onclick="callAPI('/api/greet?name=EdgeOne')">调用 /api/greet?name=EdgeOne</button>
+        </div>
+        <pre id="api-result" class="hidden"></pre>
+      </section>
+
+      <section class="card">
+        <h2>📋 项目结构</h2>
+        <pre>
+edgeOnePagesProject/
+├── index.html          ← 首页（当前页面）
+├── style.css           ← 样式文件
+└── edge-functions/
+    ├── hello.js        ← GET /hello
+    ├── api/
+    │   ├── time.js     ← GET /api/time
+    │   └── greet.js    ← GET /api/greet?name=xxx
+    └── _middleware.js  ← 请求日志中间件
+        </pre>
+      </section>
+    </main>
+
+    <footer>
+      <p>Powered by <strong>Tencent EdgeOne Pages</strong></p>
+    </footer>
+  </div>
+
+  <script>
+    async function callAPI(path) {
+      const resultEl = document.getElementById('api-result');
+      resultEl.classList.add('loading');
+      resultEl.classList.remove('hidden');
+      resultEl.textContent = '请求中...';
+
+      try {
+        const res = await fetch(path);
+        const data = await res.json();
+        resultEl.textContent = JSON.stringify(data, null, 2);
+        resultEl.classList.remove('loading');
+      } catch (err) {
+        resultEl.textContent = '请求失败: ' + err.message;
+        resultEl.classList.remove('loading');
+      }
+    }
+  </script>
+</body>
+</html>
