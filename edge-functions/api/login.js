@@ -41,8 +41,14 @@ async function apiCall(context, method, path, body) {
 async function findUserByUsername(context, username) {
   var query = JSON.stringify({ username: username });
   var path = BASE_PATH + '/users/documents?query=' + encodeURIComponent(query) + '&limit=1';
-  var data = await apiCall(context, 'GET', path);
-  return (data.data && data.data.length > 0) ? data.data[0] : null;
+  try {
+    var data = await apiCall(context, 'GET', path);
+    return (data.data && data.data.length > 0) ? data.data[0] : null;
+  } catch (e) {
+    // 集合不存在时视为无用户
+    if (e.message && e.message.indexOf('not exist') !== -1) return null;
+    throw e;
+  }
 }
 
 // --- PBKDF2 密码哈希 (Web Crypto API) ---
