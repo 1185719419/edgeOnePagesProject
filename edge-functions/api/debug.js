@@ -22,7 +22,7 @@ export default async function onRequest(context) {
     CLOUDBASE_API_KEY: apiKey ? '已设置(长度:' + apiKey.length + ')' : '未设置',
   };
 
-  // 2. Crypto API 检测
+  // 2. Crypto 检测
   try {
     var enc = new TextEncoder();
     var hash = await crypto.subtle.digest('SHA-256', enc.encode('test'));
@@ -34,18 +34,30 @@ export default async function onRequest(context) {
     results.sha256 = { status: 'fail', error: e.message };
   }
 
+  // 测试迭代 SHA-256 哈希一致性
   try {
-    var key = await crypto.subtle.importKey('raw', enc.encode('test'), 'PBKDF2', false, ['deriveBits']);
-    await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', salt: enc.encode('salt'), iterations: 1000, hash: 'SHA-512' },
-      key, 256
-    );
-    results.pbkdf2 = { status: 'ok' };
+    var enc = new TextEncoder();
+    var data1 = enc.encode('salt12345' + 'password123');
+    for (var i = 0; i < 100; i++) {
+      data1 = new Uint8Array(await crypto.subtle.digest('SHA-256', data1));
+    }
+    var result1 = Array.from(data1).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+
+    var data2 = enc.encode('salt12345' + 'password123');
+    for (var j = 0; j < 100; j++) {
+      data2 = new Uint8Array(await crypto.subtle.digest('SHA-256', data2));
+    }
+    var result2 = Array.from(data2).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+
+    results.hash_consistency = {
+      status: result1 === result2 ? 'ok (deterministic)' : 'FAIL (non-deterministic!)',
+      hash: result1.substring(0, 16) + '...',
+    };
   } catch (e) {
-    results.pbkdf2 = { status: 'fail', error: e.message };
+    results.hash_consistency = { status: 'fail', error: e.message };
   }
 
-  // 3. CloudBase REST API 连通性测试
+  // 检查用户文档格式
   if (envId && apiKey) {
     try {
       var url = 'https://' + envId + '.api.tcloudbasegateway.com/v1/database/instances/(default)/databases/(default)/collections/users/documents?limit=1';
@@ -56,18 +68,23 @@ export default async function onRequest(context) {
         },
       });
       var data = await res.json();
-      results.api_test = {
-        status: res.ok ? 'ok' : 'fail',
-        httpStatus: res.status,
-        hasData: !!(data && data.data),
-        itemCount: (data && data.data) ? data.data.length : 0,
-        error: res.ok ? null : (data.message || data.error || ('HTTP ' + res.status)),
-      };
+      if (data && data.data && data.data.length > 0) {
+        var doc = data.data[0];
+        results.user_sample = {
+          type: typeof doc,
+          isString: typeof doc === 'string',
+          keys: typeof doc === 'object' ? Object.keys(doc).slice(0, 8) : null,
+          hasSalt: typeof doc === 'object' ? !!(doc.salt) : null,
+          hasPasswordHash: typeof doc === 'object' ? !!(doc.password_hash) : null,
+          saltLen: (typeof doc === 'object' && doc.salt) ? doc.salt.length : 0,
+          hashLen: (typeof doc === 'object' && doc.password_hash) ? doc.password_hash.length : 0,
+        };
+      } else {
+        results.user_sample = { status: 'no users found' };
+      }
     } catch (e) {
-      results.api_test = { status: 'fail', error: e.message };
+      results.user_sample = { status: 'error', error: e.message };
     }
-  } else {
-    results.api_test = { status: 'skipped', reason: '环境变量不完整' };
   }
 
   return new Response(JSON.stringify(results, null, 2), {

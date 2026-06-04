@@ -65,15 +65,14 @@ async function findUserByUsername(context, username) {
   }
 }
 
-// --- PBKDF2 密码哈希 (Web Crypto API) ---
+// --- SHA-256 迭代哈希（避免 PBKDF2 兼容性问题）---
 async function hashPassword(password, salt) {
   var enc = new TextEncoder();
-  var key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-  var bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-512' },
-    key, 512
-  );
-  return Array.from(new Uint8Array(bits))
+  var data = enc.encode(salt + password);
+  for (var i = 0; i < 10000; i++) {
+    data = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+  }
+  return Array.from(data)
     .map(function(b) { return b.toString(16).padStart(2, '0'); })
     .join('');
 }
