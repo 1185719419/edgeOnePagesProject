@@ -1,10 +1,10 @@
-// CloudBase NoSQL REST API - 任务 CRUD
+// 任务 API - 每个用户一个文档，用户 ID 作为文档 _id
 function getEnv(context, name) {
   try { if (context && context.env && context.env[name]) return context.env[name]; } catch (_) {}
   return undefined;
 }
 
-var BASE_PATH = '/v1/database/instances/(default)/databases/(default)/collections';
+var BASE = '/v1/database/instances/(default)/databases/(default)/collections';
 
 async function apiCall(context, method, path, body) {
   var envId = getEnv(context, 'CLOUDBASE_ENV_ID');
@@ -13,13 +13,12 @@ async function apiCall(context, method, path, body) {
   if (!apiKey) throw new Error('未配置 CLOUDBASE_API_KEY');
 
   var url = 'https://' + envId + '.api.tcloudbasegateway.com' + path;
-  var options = {
-    method: method,
-    headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-  };
-  if (body) options.body = JSON.stringify(body);
-  var res = await fetch(url, options);
-  var data = await res.json();
+  var opts = { method: method, headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  var res = await fetch(url, opts);
+  var text = await res.text();
+  var data = null;
+  try { data = JSON.parse(text); } catch (e) { data = { _raw: text }; }
   if (!res.ok) throw new Error(data.message || data.error || ('HTTP ' + res.status));
   return data;
 }
@@ -32,109 +31,50 @@ function json(data, status) {
   });
 }
 
-// 确保集合存在
-async function ensureCollection(context, name) {
-  try { await apiCall(context, 'POST', BASE_PATH, { collectionName: name }); } catch (e) {}
-}
-
 export default async function onRequest(context) {
   if (context.request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-      },
-    });
+    return new Response(null, { status: 204, headers: {
+      'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type',
+    }});
   }
 
   try {
     var url = new URL(context.request.url);
     var userId = url.searchParams.get('userId');
-
-    if (!userId) {
-      return json({ error: '缺少 userId 参数' }, 400);
-    }
+    if (!userId) return json({ error: '缺少 userId 参数' }, 400);
 
     // 确保集合存在
-    await ensureCollection(context, 'tasks');
+    try { await apiCall(context, 'POST', BASE, { collectionName: 'tasks' }); } catch (e) {}
 
     if (context.request.method === 'GET') {
-      // 获取用户所有任务
-      var query = JSON.stringify({ userId: userId });
-      var path = BASE_PATH + '/tasks/documents?query=' + encodeURIComponent(query) + '&limit=2000';
-      var data = await apiCall(context, 'GET', path);
-
-      // 按 dateKey 分组返回
-      var tasks = {};
-      var items = data.data || [];
-      items.forEach(function(item) {
-        var key = item.dateKey;
-        if (!tasks[key]) tasks[key] = [];
-        tasks[key].push({
-          _id: item._id,
-          text: item.text,
-          isReview: item.isReview || false,
-          originalDate: item.originalDate || null,
-          createdAt: item.createdAt,
-          images: item.images || [],
-        });
-      });
-
-      return json(tasks);
+      // 按用户 ID 直读文档
+      try {
+        var data = await apiCall(context, 'GET', BASE + '/tasks/documents/' + encodeURIComponent(userId));
+        return json(data.tasks || {});
+      } catch (e) {
+        // 文档不存在，返回空对象
+        return json({});
+      }
     }
 
     if (context.request.method === 'POST') {
       var body = await context.request.json();
-      var tasksObj = body.tasks;  // { "2026-06-03": [{...}, ...], ... }
+      var tasksObj = body.tasks;
+      if (!tasksObj || typeof tasksObj !== 'object') return json({ error: '请提供 tasks 数据' }, 400);
 
-      if (!tasksObj || typeof tasksObj !== 'object') {
-        return json({ error: '请提供 tasks 数据' }, 400);
-      }
+      // 删除旧文档（如果存在）
+      try { await apiCall(context, 'DELETE', BASE + '/tasks/documents/' + encodeURIComponent(userId)); } catch (e) {}
 
-      // 先删除该用户所有旧任务
-      try {
-        await apiCall(context, 'POST', BASE_PATH + '/tasks/documents/remove', {
-          query: { userId: userId },
-          multi: true,
-        });
-      } catch (e) {}
-
-      // 批量插入所有任务
-      var docs = [];
-      Object.keys(tasksObj).forEach(function(dateKey) {
-        var dayTasks = tasksObj[dateKey];
-        if (!Array.isArray(dayTasks)) return;
-        dayTasks.forEach(function(task) {
-          docs.push({
-            userId: userId,
-            dateKey: dateKey,
-            text: task.text || '',
-            isReview: task.isReview || false,
-            originalDate: task.originalDate || null,
-            createdAt: task.createdAt || new Date().toISOString(),
-            images: task.images || [],
-          });
-        });
+      // 插入新文档
+      await apiCall(context, 'POST', BASE + '/tasks/documents', {
+        data: [{ _id: userId, userId: userId, tasks: tasksObj, updated_at: Date.now() }],
       });
 
-      if (docs.length > 0) {
-        // 分批插入（CloudBase 可能限制单次插入数量）
-        var batchSize = 50;
-        for (var i = 0; i < docs.length; i += batchSize) {
-          var batch = docs.slice(i, i + batchSize);
-          await apiCall(context, 'POST', BASE_PATH + '/tasks/documents', {
-            data: batch,
-          });
-        }
-      }
-
-      return json({ ok: true, count: docs.length });
+      return json({ ok: true });
     }
 
     return json({ error: '不支持的请求方法' }, 405);
   } catch (err) {
-    return json({ error: err.message || '服务器内部错误' }, 500);
+    return json({ error: err.message }, 500);
   }
 }
