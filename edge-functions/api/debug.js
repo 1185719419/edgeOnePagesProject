@@ -5,86 +5,102 @@ function getEnv(context, name) {
 
 export default async function onRequest(context) {
   var results = {};
-
-  // 0. context 结构
-  results.context = {
-    keys: context ? Object.keys(context) : [],
-    hasEnv: !!(context && context.env),
-    envType: context && context.env ? typeof context.env : 'undefined',
-    envKeys: (context && context.env && typeof context.env === 'object') ? Object.keys(context.env) : [],
-  };
-
-  // 1. 环境变量检测
   var envId = getEnv(context, 'CLOUDBASE_ENV_ID');
   var apiKey = getEnv(context, 'CLOUDBASE_API_KEY');
+
   results.env = {
-    CLOUDBASE_ENV_ID: envId ? envId.substring(0, 6) + '***' : '未设置',
-    CLOUDBASE_API_KEY: apiKey ? '已设置(长度:' + apiKey.length + ')' : '未设置',
+    envId: envId ? envId.substring(0, 8) + '***' : '未设置',
+    apiKey: apiKey ? '已设置(长度:' + apiKey.length + ')' : '未设置',
   };
 
-  // 2. Crypto 检测
-  try {
-    var enc = new TextEncoder();
-    var hash = await crypto.subtle.digest('SHA-256', enc.encode('test'));
-    var hex = Array.from(new Uint8Array(hash))
-      .map(function(b) { return b.toString(16).padStart(2, '0'); })
-      .join('');
-    results.sha256 = { status: 'ok', test: hex.substring(0, 16) + '...' };
-  } catch (e) {
-    results.sha256 = { status: 'fail', error: e.message };
+  if (!envId || !apiKey) {
+    results.error = '环境变量不完整';
+    return new Response(JSON.stringify(results, null, 2), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    });
   }
 
-  // 测试迭代 SHA-256 哈希一致性
+  var BASE = 'https://' + envId + '.api.tcloudbasegateway.com/v1/database/instances/(default)/databases/(default)/collections';
+  var headers = { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' };
+
+  // Test 1: 创建 test_debug 集合
   try {
-    var enc = new TextEncoder();
-    var data1 = enc.encode('salt12345' + 'password123');
-    for (var i = 0; i < 100; i++) {
-      data1 = new Uint8Array(await crypto.subtle.digest('SHA-256', data1));
-    }
-    var result1 = Array.from(data1).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    var r1 = await fetch(BASE, { method: 'POST', headers: headers, body: JSON.stringify({ collectionName: 'test_debug' }) });
+    var d1 = await r1.json();
+    results.createCollection = { status: r1.status, ok: r1.ok, body: d1 };
+  } catch (e) {
+    results.createCollection = { error: e.message };
+  }
 
-    var data2 = enc.encode('salt12345' + 'password123');
-    for (var j = 0; j < 100; j++) {
-      data2 = new Uint8Array(await crypto.subtle.digest('SHA-256', data2));
-    }
-    var result2 = Array.from(data2).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  // Test 2: 插入一条测试文档
+  try {
+    var testDoc = { test_field: 'hello', ts: Date.now() };
+    var r2 = await fetch(BASE + '/test_debug/documents', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ data: [testDoc] }),
+    });
+    var d2 = await r2.json();
+    results.insertDoc = { status: r2.status, ok: r2.ok, body: JSON.stringify(d2).substring(0, 500) };
+  } catch (e) {
+    results.insertDoc = { error: e.message };
+  }
 
-    results.hash_consistency = {
-      status: result1 === result2 ? 'ok (deterministic)' : 'FAIL (non-deterministic!)',
-      hash: result1.substring(0, 16) + '...',
+  // Test 3: 查询 test_debug 集合
+  try {
+    var r3 = await fetch(BASE + '/test_debug/documents?limit=5', { headers: headers });
+    var d3 = await r3.json();
+    results.queryTestDebug = {
+      status: r3.status,
+      ok: r3.ok,
+      count: (d3.data && d3.data.length) || 0,
+      firstDoc: d3.data && d3.data[0] ? JSON.stringify(d3.data[0]).substring(0, 300) : 'none',
     };
   } catch (e) {
-    results.hash_consistency = { status: 'fail', error: e.message };
+    results.queryTestDebug = { error: e.message };
   }
 
-  // 检查用户文档格式
-  if (envId && apiKey) {
-    try {
-      var url = 'https://' + envId + '.api.tcloudbasegateway.com/v1/database/instances/(default)/databases/(default)/collections/users/documents?limit=1';
-      var res = await fetch(url, {
-        headers: {
-          'Authorization': 'Bearer ' + apiKey,
-          'Content-Type': 'application/json',
-        },
-      });
-      var data = await res.json();
-      if (data && data.data && data.data.length > 0) {
-        var doc = data.data[0];
-        results.user_sample = {
-          type: typeof doc,
-          isString: typeof doc === 'string',
-          keys: typeof doc === 'object' ? Object.keys(doc).slice(0, 8) : null,
-          hasSalt: typeof doc === 'object' ? !!(doc.salt) : null,
-          hasPasswordHash: typeof doc === 'object' ? !!(doc.password_hash) : null,
-          saltLen: (typeof doc === 'object' && doc.salt) ? doc.salt.length : 0,
-          hashLen: (typeof doc === 'object' && doc.password_hash) ? doc.password_hash.length : 0,
-        };
-      } else {
-        results.user_sample = { status: 'no users found' };
-      }
-    } catch (e) {
-      results.user_sample = { status: 'error', error: e.message };
-    }
+  // Test 4: 查询 users 集合
+  try {
+    var r4 = await fetch(BASE + '/users/documents?limit=5', { headers: headers });
+    var d4 = await r4.json();
+    results.queryUsers = {
+      status: r4.status,
+      ok: r4.ok,
+      count: (d4.data && d4.data.length) || 0,
+      firstDoc: d4.data && d4.data[0] ? JSON.stringify(d4.data[0]).substring(0, 400) : 'none',
+    };
+  } catch (e) {
+    results.queryUsers = { error: e.message };
+  }
+
+  // Test 5: 尝试不带 EJSON 包装直接 POST 到 users
+  try {
+    var testUser = { username: 'test_write_' + Date.now(), test: true };
+    var r5 = await fetch(BASE + '/users/documents', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ data: [testUser] }),
+    });
+    var d5 = await r5.json();
+    results.insertUserTest = { status: r5.status, ok: r5.ok, body: JSON.stringify(d5).substring(0, 500) };
+  } catch (e) {
+    results.insertUserTest = { error: e.message };
+  }
+
+  // Test 6: 查询 users 确认
+  try {
+    var r6 = await fetch(BASE + '/users/documents?limit=5', { headers: headers });
+    var d6 = await r6.json();
+    results.queryUsersAfter = {
+      status: r6.status,
+      ok: r6.ok,
+      count: (d6.data && d6.data.length) || 0,
+      firstDoc: d6.data && d6.data[0] ? JSON.stringify(d6.data[0]).substring(0, 400) : 'none',
+    };
+  } catch (e) {
+    results.queryUsersAfter = { error: e.message };
   }
 
   return new Response(JSON.stringify(results, null, 2), {
