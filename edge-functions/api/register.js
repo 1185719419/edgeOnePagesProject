@@ -51,6 +51,15 @@ async function findUserByUsername(context, username) {
   }
 }
 
+// 确保集合存在（不存在则创建）
+async function ensureCollection(context, name) {
+  try {
+    await apiCall(context, 'POST', BASE_PATH, { collectionName: name });
+  } catch (e) {
+    // 集合已存在或其他非致命错误，继续尝试插入
+  }
+}
+
 // 插入用户
 async function insertUser(context, userDoc) {
   return apiCall(context, 'POST', BASE_PATH + '/users/documents', {
@@ -125,6 +134,9 @@ export default async function onRequest(context) {
     if (existing) {
       return json({ error: '该账号已被注册' }, 409);
     }
+
+    // 确保 users 集合存在
+    await ensureCollection(context, 'users');
 
     // 创建用户
     var salt = generateSalt();
