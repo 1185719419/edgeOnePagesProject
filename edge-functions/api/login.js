@@ -37,15 +37,29 @@ async function apiCall(context, method, path, body) {
   return data;
 }
 
+// 解析文档（处理 EJSON 和字符串格式）
+function parseDoc(doc) {
+  if (typeof doc === 'string') {
+    try { doc = JSON.parse(doc); } catch (e) { return null; }
+  }
+  // 处理 EJSON _id: { "$oid": "..." }
+  if (doc._id && typeof doc._id === 'object' && doc._id.$oid) {
+    doc._id = doc._id.$oid;
+  }
+  return doc;
+}
+
 // 查询用户
 async function findUserByUsername(context, username) {
   var query = JSON.stringify({ username: username });
   var path = BASE_PATH + '/users/documents?query=' + encodeURIComponent(query) + '&limit=1';
   try {
     var data = await apiCall(context, 'GET', path);
-    return (data.data && data.data.length > 0) ? data.data[0] : null;
+    if (data.data && data.data.length > 0) {
+      return parseDoc(data.data[0]);
+    }
+    return null;
   } catch (e) {
-    // 集合不存在时视为无用户
     if (e.message && e.message.indexOf('not exist') !== -1) return null;
     throw e;
   }

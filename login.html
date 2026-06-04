@@ -8,7 +8,7 @@
 </head>
 <body>
   <div class="login-container">
-    <div class="login-card">
+    <div class="login-card" id="loginCard">
       <div class="login-header">
         <h1>账号登录</h1>
         <p class="login-subtitle">EdgeOne Pages + CloudBase</p>
@@ -112,7 +112,7 @@
     // 切换登录/注册卡片
     document.getElementById('showRegister').addEventListener('click', function(e) {
       e.preventDefault();
-      document.querySelector('.login-card:not(.hidden)').classList.add('hidden');
+      document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('registerCard').classList.remove('hidden');
       clearMessages();
     });
@@ -120,7 +120,7 @@
     document.getElementById('showLogin').addEventListener('click', function(e) {
       e.preventDefault();
       document.getElementById('registerCard').classList.add('hidden');
-      document.querySelector('.login-card:not(.hidden)').classList.remove('hidden');
+      document.getElementById('loginCard').classList.remove('hidden');
       clearMessages();
     });
 
@@ -228,9 +228,8 @@
             document.getElementById('registerForm').reset();
             setTimeout(function() {
               document.getElementById('registerCard').classList.add('hidden');
-              document.querySelector('.login-card:not(.hidden)').classList.remove('hidden');
+              document.getElementById('loginCard').classList.remove('hidden');
               clearMessages();
-              // 预填账号
               document.getElementById('username').value = username;
               document.getElementById('password').focus();
             }, 1500);
