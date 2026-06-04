@@ -47,15 +47,25 @@ async function tc3Sign(secretId, secretKey, service, host, action, payload) {
   };
 }
 
+// --- 获取环境变量（兼容 EdgeOne 多种方式）---
+function getEnv(name) {
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env[name]) {
+      return process.env[name];
+    }
+  } catch (_) {}
+  return undefined;
+}
+
 // --- 调用 CloudBase TCB API ---
 async function tcbApiCall(action, params) {
-  const secretId = process.env.CLOUDBASE_SECRET_ID;
-  const secretKey = process.env.CLOUDBASE_SECRET_KEY;
+  const secretId = getEnv('CLOUDBASE_SECRET_ID');
+  const secretKey = getEnv('CLOUDBASE_SECRET_KEY');
   const host = 'tcb.tencentcloudapi.com';
   const service = 'tcb';
 
   if (!secretId || !secretKey) {
-    throw new Error('CloudBase 凭证未配置，请在 EdgeOne 控制台设置环境变量 CLOUDBASE_SECRET_ID 和 CLOUDBASE_SECRET_KEY');
+    throw new Error('CloudBase 凭证未配置 (CLOUDBASE_SECRET_ID / CLOUDBASE_SECRET_KEY)，请在 EdgeOne 控制台环境变量中设置');
   }
 
   const payload = JSON.stringify(params);
@@ -69,7 +79,7 @@ async function tcbApiCall(action, params) {
       'X-TC-Action': action,
       'X-TC-Version': '2019-06-08',
       'X-TC-Timestamp': String(timestamp),
-      'X-TC-Region': process.env.CLOUDBASE_REGION || 'ap-guangzhou',
+      'X-TC-Region': getEnv('CLOUDBASE_REGION') || 'ap-guangzhou',
       'Authorization': authorization,
     },
     body: payload,
@@ -78,7 +88,7 @@ async function tcbApiCall(action, params) {
   const data = await response.json();
 
   if (data.Response && data.Response.Error) {
-    throw new Error(`CloudBase API 错误: ${data.Response.Error.Code} - ${data.Response.Error.Message}`);
+    throw new Error('CloudBase API 错误: ' + data.Response.Error.Code + ' - ' + data.Response.Error.Message);
   }
 
   return data;
@@ -164,9 +174,9 @@ export default async function onRequest(context) {
       return json({ error: '密码长度不能少于6位' }, 400);
     }
 
-    const envId = process.env.CLOUDBASE_ENV_ID;
+    const envId = getEnv('CLOUDBASE_ENV_ID');
     if (!envId) {
-      return json({ error: '服务配置错误：缺少 CLOUDBASE_ENV_ID' }, 500);
+      return json({ error: '服务配置错误：缺少 CLOUDBASE_ENV_ID 环境变量' }, 500);
     }
 
     // 检查用户是否已存在
@@ -191,7 +201,6 @@ export default async function onRequest(context) {
       message: '注册成功',
     });
   } catch (err) {
-    console.error('Register error:', err);
-    return json({ error: '服务器内部错误' }, 500);
+    return json({ error: err.message || '服务器内部错误' }, 500);
   }
 }
