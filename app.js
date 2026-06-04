@@ -124,33 +124,67 @@ function setupEventListeners() {
 // ===== 数据加载 =====
 async function loadData() {
   var userId = getUserId();
+  var cacheKey = 'mcs_cache_' + userId;
 
-  // 加载配置
+  // 先从缓存加载，立即渲染
   try {
-    var configRes = await fetch('/api/config?userId=' + encodeURIComponent(userId));
-    if (configRes.ok) {
-      var config = await configRes.json();
-      REVIEW_INTERVALS = config.intervals || DEFAULT_INTERVALS.slice();
+    var cached = JSON.parse(localStorage.getItem(cacheKey));
+    if (cached && cached.tasks) {
+      tasks = cached.tasks;
+      REVIEW_INTERVALS = cached.intervals || DEFAULT_INTERVALS.slice();
+      renderCalendar();
     }
-  } catch (e) {
+  } catch (e) {}
+
+  // 并行从服务器加载
+  var configPromise = fetch('/api/config?userId=' + encodeURIComponent(userId))
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .catch(function() { return null; });
+
+  var tasksPromise = fetch('/api/tasks?userId=' + encodeURIComponent(userId))
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .catch(function() { return null; });
+
+  var results = await Promise.all([configPromise, tasksPromise]);
+  var serverConfig = results[0];
+  var serverTasks = results[1];
+
+  var needRerender = false;
+
+  if (serverConfig && serverConfig.intervals) {
+    REVIEW_INTERVALS = serverConfig.intervals;
+    needRerender = true;
+  } else if (!REVIEW_INTERVALS || REVIEW_INTERVALS.length === 0) {
     REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
   }
 
-  // 加载任务
-  try {
-    var taskRes = await fetch('/api/tasks?userId=' + encodeURIComponent(userId));
-    if (taskRes.ok) {
-      tasks = await taskRes.json();
-    }
-  } catch (e) {
+  if (serverTasks) {
+    tasks = serverTasks;
+    needRerender = true;
+  } else if (!tasks || Object.keys(tasks).length === 0) {
     tasks = {};
   }
 
-  renderCalendar();
+  // 更新缓存
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify({ tasks: tasks, intervals: REVIEW_INTERVALS }));
+  } catch (e) {}
+
+  if (needRerender || !document.getElementById('calendarDays').children.length) {
+    renderCalendar();
+  }
+}
+
+function updateCache() {
+  try {
+    var cacheKey = 'mcs_cache_' + getUserId();
+    localStorage.setItem(cacheKey, JSON.stringify({ tasks: tasks, intervals: REVIEW_INTERVALS }));
+  } catch (e) {}
 }
 
 async function saveTasksToServer() {
   var userId = getUserId();
+  updateCache();
   try {
     await fetch('/api/tasks?userId=' + encodeURIComponent(userId), {
       method: 'POST',
@@ -162,6 +196,7 @@ async function saveTasksToServer() {
 
 async function saveConfigToServer(arr) {
   var userId = getUserId();
+  updateCache();
   try {
     await fetch('/api/config?userId=' + encodeURIComponent(userId), {
       method: 'POST',
