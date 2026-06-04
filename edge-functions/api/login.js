@@ -1,6 +1,4 @@
-// CloudBase NoSQL REST API 封装
-// 文档: https://docs.cloudbase.net/http-api/nosql/nosql-restful-api
-
+// CloudBase NoSQL REST API - 登录（带诊断）
 function getEnv(context, name) {
   try { if (context && context.env && context.env[name]) return context.env[name]; } catch (_) {}
   return undefined;
@@ -8,85 +6,54 @@ function getEnv(context, name) {
 
 var BASE_PATH = '/v1/database/instances/(default)/databases/(default)/collections';
 
-// 调用 CloudBase REST API
 async function apiCall(context, method, path, body) {
   var envId = getEnv(context, 'CLOUDBASE_ENV_ID');
   var apiKey = getEnv(context, 'CLOUDBASE_API_KEY');
-
   if (!envId) throw new Error('未配置 CLOUDBASE_ENV_ID');
-  if (!apiKey) throw new Error('未配置 CLOUDBASE_API_KEY，请在 CloudBase 控制台创建 API Key');
+  if (!apiKey) throw new Error('未配置 CLOUDBASE_API_KEY');
 
   var url = 'https://' + envId + '.api.tcloudbasegateway.com' + path;
   var options = {
     method: method,
-    headers: {
-      'Authorization': 'Bearer ' + apiKey,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
   };
-  if (body) {
-    options.body = JSON.stringify(body);
-  }
+  if (body) options.body = JSON.stringify(body);
 
   var res = await fetch(url, options);
-  var data = await res.json();
+  var text = await res.text();
+  var data = null;
+  try { data = JSON.parse(text); } catch (e) { data = { _raw: text }; }
 
-  if (!res.ok) {
-    throw new Error(data.message || data.error || ('HTTP ' + res.status));
-  }
-  return data;
+  return { ok: res.ok, status: res.status, data: data };
 }
 
-// 解析文档（处理 EJSON 和字符串格式）
 function parseDoc(doc) {
   if (typeof doc === 'string') {
     try { doc = JSON.parse(doc); } catch (e) { return null; }
   }
-  // 处理 EJSON _id: { "$oid": "..." }
   if (doc._id && typeof doc._id === 'object' && doc._id.$oid) {
     doc._id = doc._id.$oid;
   }
   return doc;
 }
 
-// 查询用户
-async function findUserByUsername(context, username) {
-  var query = JSON.stringify({ username: username });
-  var path = BASE_PATH + '/users/documents?query=' + encodeURIComponent(query) + '&limit=1';
-  try {
-    var data = await apiCall(context, 'GET', path);
-    if (data.data && data.data.length > 0) {
-      return parseDoc(data.data[0]);
-    }
-    return null;
-  } catch (e) {
-    if (e.message && e.message.indexOf('not exist') !== -1) return null;
-    throw e;
-  }
-}
-
-// --- SHA-256 迭代哈希（避免 PBKDF2 兼容性问题）---
 async function hashPassword(password, salt) {
   var enc = new TextEncoder();
-  var data = enc.encode(salt + password);
+  var d = enc.encode(salt + password);
   for (var i = 0; i < 10000; i++) {
-    data = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+    d = new Uint8Array(await crypto.subtle.digest('SHA-256', d));
   }
-  return Array.from(data)
-    .map(function(b) { return b.toString(16).padStart(2, '0'); })
-    .join('');
+  return Array.from(d).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 }
 
-// --- 响应 ---
 function json(data, status) {
   status = status || 200;
-  return new Response(JSON.stringify(data), {
+  return new Response(JSON.stringify(data, null, 2), {
     status: status,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
   });
 }
 
-// --- 主入口 ---
 export default async function onRequest(context) {
   if (context.request.method === 'OPTIONS') {
     return new Response(null, {
@@ -103,6 +70,8 @@ export default async function onRequest(context) {
     return json({ error: '请使用 POST 请求' }, 405);
   }
 
+  var debugLog = [];
+
   try {
     var body = await context.request.json();
     var username = body.username;
@@ -112,23 +81,42 @@ export default async function onRequest(context) {
       return json({ error: '请输入账号和密码' }, 400);
     }
 
-    var user = await findUserByUsername(context, username);
+    // Step 1: 查询用户
+    var query = JSON.stringify({ username: username });
+    var path = BASE_PATH + '/users/documents?query=' + encodeURIComponent(query) + '&limit=2';
+    var r1 = await apiCall(context, 'GET', path);
+    var docs = (r1.data && r1.data.data) ? r1.data.data : [];
+    debugLog.push({ step: 'queryUser', status: r1.status, ok: r1.ok, docCount: docs.length, docType: docs.length > 0 ? typeof docs[0] : 'none' });
 
-    if (!user) {
-      return json({ error: '账号或密码错误' }, 401);
+    if (docs.length === 0) {
+      // 也查一下所有用户看看
+      var r1b = await apiCall(context, 'GET', BASE_PATH + '/users/documents?limit=5');
+      var totalUsers = (r1b.data && r1b.data.data) ? r1b.data.data.length : 0;
+      debugLog.push({ step: 'queryAllUsers', status: r1b.status, total: totalUsers, firstDoc: totalUsers > 0 ? JSON.stringify(r1b.data.data[0]).substring(0, 200) : 'none' });
+      return json({ error: '账号或密码错误', debug: debugLog }, 401);
     }
 
+    var user = parseDoc(docs[0]);
+    debugLog.push({
+      step: 'parseDoc',
+      hasSalt: !!(user && user.salt),
+      saltLen: (user && user.salt) ? user.salt.length : 0,
+      hasHash: !!(user && user.password_hash),
+      hashLen: (user && user.password_hash) ? user.password_hash.length : 0,
+      salt16: (user && user.salt) ? user.salt.substring(0, 16) : 'N/A',
+      hash16: (user && user.password_hash) ? user.password_hash.substring(0, 16) : 'N/A',
+    });
+
+    if (!user || !user.salt || !user.password_hash) {
+      return json({ error: '数据异常：用户记录不完整', debug: debugLog }, 500);
+    }
+
+    // Step 2: 验证密码
     var hashed = await hashPassword(password, user.salt);
+    debugLog.push({ step: 'hashInput', computedHash16: hashed.substring(0, 16), match: hashed === user.password_hash });
+
     if (hashed !== user.password_hash) {
-      return json({
-        error: '账号或密码错误',
-        debug: {
-          saltMatch: user.salt ? user.salt.substring(0, 16) + '...' : '无salt',
-          storedHash: user.password_hash ? user.password_hash.substring(0, 16) + '...' : '无hash',
-          computedHash: hashed.substring(0, 16) + '...',
-          hashLen: { stored: (user.password_hash || '').length, computed: hashed.length },
-        }
-      }, 401);
+      return json({ error: '账号或密码错误', debug: debugLog }, 401);
     }
 
     return json({
@@ -137,6 +125,6 @@ export default async function onRequest(context) {
       user: { id: user._id, username: user.username },
     });
   } catch (err) {
-    return json({ error: err.message || '服务器内部错误' }, 500);
+    return json({ error: err.message, debug: debugLog }, 500);
   }
 }
