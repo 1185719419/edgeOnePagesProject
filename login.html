@@ -170,17 +170,16 @@
           var data = await res.json();
 
           if (res.ok && data.success) {
-            showMessage('message', '登录成功，正在进入...', 'success');
+            // 成功直接跳转，不做任何多余提示
             localStorage.setItem('user', JSON.stringify(data.user));
-            // 立即跳转，按钮保持禁用防重复点击
             window.location.href = '/main.html';
           } else {
-            showMessage('message', data.error || '登录失败', 'error');
             setLoading(loginBtn, false);
+            showMessage('message', data.error || '登录失败', 'error');
           }
         } catch (err) {
-          showMessage('message', '网络错误，请稍后重试', 'error');
           setLoading(loginBtn, false);
+          showMessage('message', '网络错误，请稍后重试', 'error');
         }
       });
     })();
