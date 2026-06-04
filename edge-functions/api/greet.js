@@ -1,5 +1,5 @@
-export default function handler(request) {
-  const url = new URL(request.url);
+export default function onRequest(context) {
+  const url = new URL(context.request.url);
   const name = url.searchParams.get('name') || 'World';
 
   return new Response(

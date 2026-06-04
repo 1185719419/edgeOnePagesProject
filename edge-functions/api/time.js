@@ -1,4 +1,4 @@
-export default function handler(request) {
+export default function onRequest(context) {
   return new Response(
     JSON.stringify({
       time: new Date().toISOString(),

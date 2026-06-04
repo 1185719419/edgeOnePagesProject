@@ -1,4 +1,4 @@
-export default function handler(request) {
+export default function onRequest(context) {
   return new Response(
     JSON.stringify({
       message: 'Hello from EdgeOne Pages Edge Function!',

@@ -1,4 +1,4 @@
-export default async function handler(request, context) {
+export default async function onRequest(request, context) {
   const start = Date.now();
   const response = await context.next();
   const duration = Date.now() - start;
