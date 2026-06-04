@@ -75,32 +75,64 @@ export default async function onRequest(context) {
     results.queryUsers = { error: e.message };
   }
 
-  // Test 5: 尝试不带 EJSON 包装直接 POST 到 users
+  // Test 5: 插入测试用户并记录 ID
+  var insertedId = null;
+  var testUsername = 'test_write_' + Date.now();
   try {
-    var testUser = { username: 'test_write_' + Date.now(), test: true };
+    var testUser = { username: testUsername, test: true };
     var r5 = await fetch(BASE + '/users/documents', {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({ data: [testUser] }),
     });
     var d5 = await r5.json();
-    results.insertUserTest = { status: r5.status, ok: r5.ok, body: JSON.stringify(d5).substring(0, 500) };
+    if (d5.insertedIds && d5.insertedIds[0]) insertedId = d5.insertedIds[0];
+    results.insertUserTest = { status: r5.status, ok: r5.ok, insertedId: insertedId, body: JSON.stringify(d5).substring(0, 300) };
   } catch (e) {
     results.insertUserTest = { error: e.message };
   }
 
-  // Test 6: 查询 users 确认
+  // Test 6a: 按 ID 直接读用户文档
+  if (insertedId) {
+    try {
+      var r6a = await fetch(BASE + '/users/documents/' + insertedId, { headers: headers });
+      var d6a = await r6a.json();
+      results.getById = { status: r6a.status, ok: r6a.ok, found: !!(d6a && d6a.data), body: JSON.stringify(d6a).substring(0, 300) };
+    } catch (e) {
+      results.getById = { error: e.message };
+    }
+  }
+
+  // Test 6b: 不带 filter 查询 users
   try {
-    var r6 = await fetch(BASE + '/users/documents?limit=5', { headers: headers });
-    var d6 = await r6.json();
-    results.queryUsersAfter = {
-      status: r6.status,
-      ok: r6.ok,
-      count: (d6.data && d6.data.length) || 0,
-      firstDoc: d6.data && d6.data[0] ? JSON.stringify(d6.data[0]).substring(0, 400) : 'none',
+    var r6b = await fetch(BASE + '/users/documents', { headers: headers });
+    var d6b = await r6b.json();
+    results.queryAllUsers = {
+      status: r6b.status,
+      ok: r6b.ok,
+      count: (d6b.data && d6b.data.length) || 0,
+      firstDoc: d6b.data && d6b.data[0] ? JSON.stringify(d6b.data[0]).substring(0, 300) : 'none',
     };
   } catch (e) {
-    results.queryUsersAfter = { error: e.message };
+    results.queryAllUsers = { error: e.message };
+  }
+
+  // Test 6c: 用 username filter 查询
+  if (insertedId) {
+    try {
+      var filter = JSON.stringify({ username: testUsername });
+      var r6c = await fetch(BASE + '/users/documents?query=' + encodeURIComponent(filter), { headers: headers });
+      var d6c = await r6c.json();
+      results.queryByUsername = {
+        status: r6c.status,
+        ok: r6c.ok,
+        filter: filter,
+        count: (d6c.data && d6c.data.length) || 0,
+        firstDoc: d6c.data && d6c.data[0] ? JSON.stringify(d6c.data[0]).substring(0, 300) : 'none',
+      };
+    } catch (e) {
+      results.queryByUsername = { error: e.message };
+    }
   }
 
   return new Response(JSON.stringify(results, null, 2), {
