@@ -11,6 +11,10 @@
     <header>
       <h1>🚀 EdgeOne Pages Demo</h1>
       <p class="subtitle">部署在腾讯云 EdgeOne Pages 上的示例项目</p>
+      <nav style="margin-top: 16px;">
+        <a href="/login.html" id="loginLink" style="color: #58a6ff; text-decoration: none; font-size: 0.95rem;">登录</a>
+        <span id="userInfo" class="hidden" style="color: #8b949e; font-size: 0.95rem;"></span>
+      </nav>
     </header>
 
     <main>
@@ -53,6 +57,36 @@ edgeOnePagesProject/
   </div>
 
   <script>
+    // 检查登录状态
+    (function() {
+      var user = localStorage.getItem('user');
+      if (user) {
+        try {
+          var u = JSON.parse(user);
+          document.getElementById('loginLink').classList.add('hidden');
+          var info = document.getElementById('userInfo');
+          info.classList.remove('hidden');
+          info.innerHTML = '已登录: <strong style="color:#58a6ff">' + escapeHtml(u.username) + '</strong> ';
+          var logout = document.createElement('a');
+          logout.href = '#';
+          logout.textContent = '退出';
+          logout.style.cssText = 'color:#f85149;text-decoration:none;font-size:0.9rem;margin-left:8px;';
+          logout.onclick = function(e) {
+            e.preventDefault();
+            localStorage.removeItem('user');
+            window.location.reload();
+          };
+          info.appendChild(logout);
+        } catch(e) {}
+      }
+    })();
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    }
+
     async function callAPI(path) {
       const resultEl = document.getElementById('api-result');
       resultEl.classList.add('loading');

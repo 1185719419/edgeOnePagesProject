@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 - EdgeOne Pages</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <h1>账号登录</h1>
+        <p class="login-subtitle">EdgeOne Pages + CloudBase</p>
+      </div>
+
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="username">账号</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="请输入账号"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="password">密码</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="请输入密码"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <div id="message" class="message hidden"></div>
+
+        <button type="submit" id="submitBtn" class="login-btn">登 录</button>
+      </form>
+
+      <div class="login-footer">
+        <span>还没有账号？</span>
+        <a href="#" id="showRegister">立即注册</a>
+      </div>
+    </div>
+
+    <!-- 注册卡片（默认隐藏） -->
+    <div class="login-card hidden" id="registerCard">
+      <div class="login-header">
+        <h1>账号注册</h1>
+        <p class="login-subtitle">创建新账号</p>
+      </div>
+
+      <form id="registerForm" class="login-form">
+        <div class="form-group">
+          <label for="regUsername">账号</label>
+          <input
+            type="text"
+            id="regUsername"
+            name="username"
+            placeholder="请输入账号"
+            autocomplete="off"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="regPassword">密码</label>
+          <input
+            type="password"
+            id="regPassword"
+            name="password"
+            placeholder="请输入密码（至少6位）"
+            autocomplete="new-password"
+            required
+            minlength="6"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="regPasswordConfirm">确认密码</label>
+          <input
+            type="password"
+            id="regPasswordConfirm"
+            name="passwordConfirm"
+            placeholder="请再次输入密码"
+            autocomplete="new-password"
+            required
+            minlength="6"
+          >
+        </div>
+
+        <div id="regMessage" class="message hidden"></div>
+
+        <button type="submit" id="regSubmitBtn" class="login-btn">注 册</button>
+      </form>
+
+      <div class="login-footer">
+        <span>已有账号？</span>
+        <a href="#" id="showLogin">返回登录</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 切换登录/注册卡片
+    document.getElementById('showRegister').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.querySelector('.login-card:not(.hidden)').classList.add('hidden');
+      document.getElementById('registerCard').classList.remove('hidden');
+      clearMessages();
+    });
+
+    document.getElementById('showLogin').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('registerCard').classList.add('hidden');
+      document.querySelector('.login-card:not(.hidden)').classList.remove('hidden');
+      clearMessages();
+    });
+
+    function clearMessages() {
+      document.getElementById('message').classList.add('hidden');
+      document.getElementById('regMessage').classList.add('hidden');
+    }
+
+    function showMessage(elementId, text, type) {
+      var el = document.getElementById(elementId);
+      el.textContent = text;
+      el.className = 'message ' + type;
+    }
+
+    function setLoading(btn, loading) {
+      btn.disabled = loading;
+      btn.textContent = loading ? '处理中...' : (btn.dataset.defaultText || btn.textContent);
+      if (!loading && btn.dataset.defaultText) {
+        btn.textContent = btn.dataset.defaultText;
+      }
+    }
+
+    // 登录
+    (function() {
+      var loginBtn = document.getElementById('submitBtn');
+      loginBtn.dataset.defaultText = '登 录';
+
+      document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var username = document.getElementById('username').value.trim();
+        var password = document.getElementById('password').value;
+
+        if (!username || !password) {
+          showMessage('message', '请输入账号和密码', 'error');
+          return;
+        }
+
+        setLoading(loginBtn, true);
+
+        try {
+          var res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, password: password })
+          });
+
+          var data = await res.json();
+
+          if (res.ok && data.success) {
+            showMessage('message', '登录成功，正在跳转...', 'success');
+            localStorage.setItem('user', JSON.stringify(data.user));
+            setTimeout(function() {
+              window.location.href = '/';
+            }, 1000);
+          } else {
+            showMessage('message', data.error || '登录失败', 'error');
+          }
+        } catch (err) {
+          showMessage('message', '网络错误，请稍后重试', 'error');
+        } finally {
+          setLoading(loginBtn, false);
+        }
+      });
+    })();
+
+    // 注册
+    (function() {
+      var regBtn = document.getElementById('regSubmitBtn');
+      regBtn.dataset.defaultText = '注 册';
+
+      document.getElementById('registerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var username = document.getElementById('regUsername').value.trim();
+        var password = document.getElementById('regPassword').value;
+        var passwordConfirm = document.getElementById('regPasswordConfirm').value;
+
+        if (!username || !password) {
+          showMessage('regMessage', '请填写所有字段', 'error');
+          return;
+        }
+
+        if (password.length < 6) {
+          showMessage('regMessage', '密码长度不能少于6位', 'error');
+          return;
+        }
+
+        if (password !== passwordConfirm) {
+          showMessage('regMessage', '两次输入的密码不一致', 'error');
+          return;
+        }
+
+        setLoading(regBtn, true);
+
+        try {
+          var res = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, password: password })
+          });
+
+          var data = await res.json();
+
+          if (res.ok && data.success) {
+            showMessage('regMessage', '注册成功，请返回登录', 'success');
+            document.getElementById('registerForm').reset();
+          } else {
+            showMessage('regMessage', data.error || '注册失败', 'error');
+          }
+        } catch (err) {
+          showMessage('regMessage', '网络错误，请稍后重试', 'error');
+        } finally {
+          setLoading(regBtn, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

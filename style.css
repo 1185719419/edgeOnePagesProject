@@ -134,6 +134,136 @@ footer strong {
   color: #58a6ff;
 }
 
+/* ===== 登录/注册页面 ===== */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.login-card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-header h1 {
+  font-size: 1.8rem;
+  color: #e6edf3;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  font-size: 0.9rem;
+  color: #8b949e;
+}
+
+.login-form .form-group {
+  margin-bottom: 20px;
+}
+
+.login-form label {
+  display: block;
+  font-size: 0.9rem;
+  color: #c9d1d9;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+  outline: none;
+}
+
+.login-form input:focus {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+}
+
+.login-form input::placeholder {
+  color: #484f58;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: #238636;
+  color: #fff;
+  border: 1px solid #2ea043;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.login-btn:hover {
+  background: #2ea043;
+}
+
+.login-btn:disabled {
+  background: #21262d;
+  border-color: #30363d;
+  color: #8b949e;
+  cursor: not-allowed;
+}
+
+.message {
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.message.success {
+  background: #1b3826;
+  color: #3fb950;
+  border: 1px solid #2ea043;
+}
+
+.message.error {
+  background: #3d1f1f;
+  color: #f85149;
+  border: 1px solid #f85149;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 0.9rem;
+  color: #8b949e;
+}
+
+.login-footer a {
+  color: #58a6ff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 600px) {
   header {
     padding: 40px 0 30px;
