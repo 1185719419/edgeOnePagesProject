@@ -117,22 +117,25 @@ export default async function onRequest(context) {
     results.queryAllUsers = { error: e.message };
   }
 
-  // Test 6c: 用 username filter 查询
-  if (insertedId) {
-    try {
-      var filter = JSON.stringify({ username: testUsername });
-      var r6c = await fetch(BASE + '/users/documents?query=' + encodeURIComponent(filter), { headers: headers });
-      var d6c = await r6c.json();
-      results.queryByUsername = {
-        status: r6c.status,
-        ok: r6c.ok,
-        filter: filter,
-        count: (d6c.data && d6c.data.length) || 0,
-        firstDoc: d6c.data && d6c.data[0] ? JSON.stringify(d6c.data[0]).substring(0, 300) : 'none',
-      };
-    } catch (e) {
-      results.queryByUsername = { error: e.message };
-    }
+  // Test 6: 测试用自定义 _id (用户名作为文档ID) 写入和读取
+  var customId = 'user_test_' + Date.now();
+  try {
+    // 写入时指定 _id
+    var docWithId = { _id: customId, username: customId, test: true, ts: Date.now() };
+    var r7a = await fetch(BASE + '/users/documents', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ data: [docWithId] }),
+    });
+    var d7a = await r7a.json();
+    results.insertWithCustomId = { status: r7a.status, ok: r7a.ok, body: JSON.stringify(d7a).substring(0, 200) };
+
+    // 用自定义 ID 直读
+    var r7b = await fetch(BASE + '/users/documents/' + customId, { headers: headers });
+    var d7b = await r7b.json();
+    results.getByCustomId = { status: r7b.status, ok: r7b.ok, found: !!(d7b && d7b.data), body: JSON.stringify(d7b).substring(0, 300) };
+  } catch (e) {
+    results.customIdTest = { error: e.message };
   }
 
   return new Response(JSON.stringify(results, null, 2), {
