@@ -3,106 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EdgeOne Pages Demo</title>
+  <title>记忆曲线任务日历</title>
   <link rel="stylesheet" href="/style.css">
+  <style>
+    .landing-body { display:flex; justify-content:center; align-items:center; min-height:100vh; padding:20px; }
+    .landing-card { background:#161b22; border:1px solid #30363d; border-radius:12px; padding:48px; text-align:center; max-width:480px; width:100%; }
+    .landing-card h1 { color:#e6edf3; margin-bottom:8px; font-size:1.8rem; }
+    .landing-card p { color:#8b949e; margin-bottom:24px; }
+    .landing-card a { display:inline-block; padding:10px 32px; background:#238636; color:#fff; border-radius:6px; text-decoration:none; font-weight:600; transition:background 0.2s; }
+    .landing-card a:hover { background:#2ea043; }
+    .landing-user { color:#58a6ff; font-weight:600; margin-bottom:16px; }
+    .landing-btn-group { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+    .landing-btn-secondary { display:inline-block; padding:10px 32px; background:#21262d; color:#58a6ff; border:1px solid #30363d; border-radius:6px; text-decoration:none; font-weight:600; cursor:pointer; transition:all 0.2s; }
+    .landing-btn-secondary:hover { border-color:#58a6ff; }
+  </style>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <h1>🚀 EdgeOne Pages Demo</h1>
-      <p class="subtitle">部署在腾讯云 EdgeOne Pages 上的示例项目</p>
-      <nav style="margin-top: 16px;">
-        <a href="/login.html" id="loginLink" style="color: #58a6ff; text-decoration: none; font-size: 0.95rem;">登录</a>
-        <span id="userInfo" class="hidden" style="color: #8b949e; font-size: 0.95rem;"></span>
-      </nav>
-    </header>
-
-    <main>
-      <section class="card">
-        <h2>📄 静态页面</h2>
-        <p>EdgeOne Pages 支持托管静态网站资源。</p>
-        <p class="status success">当前页面由 EdgeOne Pages 提供</p>
-      </section>
-
-      <section class="card">
-        <h2>⚡ Edge Functions</h2>
-        <p>使用 Edge Functions 在边缘节点执行服务端逻辑。</p>
-        <div class="api-buttons">
-          <button onclick="callAPI('/hello')">调用 /hello</button>
-          <button onclick="callAPI('/api/time')">调用 /api/time</button>
-          <button onclick="callAPI('/api/greet?name=EdgeOne')">调用 /api/greet?name=EdgeOne</button>
-        </div>
-        <pre id="api-result" class="hidden"></pre>
-      </section>
-
-      <section class="card">
-        <h2>📋 项目结构</h2>
-        <pre>
-edgeOnePagesProject/
-├── index.html          ← 首页（当前页面）
-├── style.css           ← 样式文件
-└── edge-functions/
-    ├── hello.js        ← GET /hello
-    ├── api/
-    │   ├── time.js     ← GET /api/time
-    │   └── greet.js    ← GET /api/greet?name=xxx
-    └── _middleware.js  ← 请求日志中间件
-        </pre>
-      </section>
-    </main>
-
-    <footer>
-      <p>Powered by <strong>Tencent EdgeOne Pages</strong></p>
-    </footer>
+<body class="landing-body">
+  <div class="landing-card" id="authCheck">
+    <p style="color:#8b949e;">加载中...</p>
   </div>
 
   <script>
-    // 检查登录状态
     (function() {
-      var user = localStorage.getItem('user');
-      if (user) {
-        try {
-          var u = JSON.parse(user);
-          document.getElementById('loginLink').classList.add('hidden');
-          var info = document.getElementById('userInfo');
-          info.classList.remove('hidden');
-          info.innerHTML = '已登录: <strong style="color:#58a6ff">' + escapeHtml(u.username) + '</strong> ';
-          var logout = document.createElement('a');
-          logout.href = '#';
-          logout.textContent = '退出';
-          logout.style.cssText = 'color:#f85149;text-decoration:none;font-size:0.9rem;margin-left:8px;';
-          logout.onclick = function(e) {
-            e.preventDefault();
-            localStorage.removeItem('user');
-            window.location.reload();
-          };
-          info.appendChild(logout);
-        } catch(e) {}
+      var user = null;
+      try { user = JSON.parse(localStorage.getItem('user')); } catch(e) {}
+
+      var container = document.getElementById('authCheck');
+
+      if (user && user.id && user.username) {
+        container.innerHTML =
+          '<h1>记忆曲线任务日历</h1>' +
+          '<p>基于艾宾浩斯记忆曲线的任务管理工具</p>' +
+          '<div class="landing-user">已登录: ' + escapeHtml(user.username) + '</div>' +
+          '<div class="landing-btn-group">' +
+            '<a href="/main.html">进入日历</a>' +
+            '<span class="landing-btn-secondary" id="landingLogout">退出登录</span>' +
+          '</div>';
+        document.getElementById('landingLogout').addEventListener('click', function() {
+          localStorage.removeItem('user');
+          window.location.reload();
+        });
+      } else {
+        container.innerHTML =
+          '<h1>记忆曲线任务日历</h1>' +
+          '<p>基于艾宾浩斯记忆曲线的任务管理工具</p>' +
+          '<a href="/login.html">登录 / 注册</a>';
+      }
+
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
       }
     })();
-
-    function escapeHtml(str) {
-      var div = document.createElement('div');
-      div.appendChild(document.createTextNode(str));
-      return div.innerHTML;
-    }
-
-    async function callAPI(path) {
-      const resultEl = document.getElementById('api-result');
-      resultEl.classList.add('loading');
-      resultEl.classList.remove('hidden');
-      resultEl.textContent = '请求中...';
-
-      try {
-        const res = await fetch(path);
-        const data = await res.json();
-        resultEl.textContent = JSON.stringify(data, null, 2);
-        resultEl.classList.remove('loading');
-      } catch (err) {
-        resultEl.textContent = '请求失败: ' + err.message;
-        resultEl.classList.remove('loading');
-      }
-    }
   </script>
 </body>
 </html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>记忆曲线任务日历</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button id="settingsBtn" class="settings-btn" title="设置">&#9881;</button>
+          <span id="userDisplay" style="font-size:0.9em;color:#667eea;font-weight:600;"></span>
+        </div>
+        <button id="logoutBtn" style="background:none;border:1px solid #d83a52;color:#d83a52;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.85em;">退出登录</button>
+      </div>
+      <h1>记忆曲线任务日历</h1>
+      <div class="controls">
+        <button id="prevMonth">&lt;</button>
+        <span id="currentMonth"></span>
+        <button id="nextMonth">&gt;</button>
+        <button id="batchDeleteBtn" class="batch-delete-btn">批量删除</button>
+      </div>
+    </header>
+
+    <div class="calendar">
+      <div class="weekdays">
+        <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+      </div>
+      <div id="calendarDays" class="days"></div>
+    </div>
+
+    <div id="taskModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalDate"></h2>
+        <div class="task-input">
+          <div class="task-input-main">
+            <textarea id="taskInput" placeholder="输入任务内容（最多500字）" maxlength="500"></textarea>
+            <div id="taskImageArea" class="task-image-area">
+              <div id="taskImagePreviews" class="task-image-previews"></div>
+              <button id="addTaskImage" type="button" class="add-image-btn">+ 添加图片</button>
+              <input id="taskImageInput" type="file" accept="image/*" multiple hidden>
+            </div>
+          </div>
+          <div class="task-input-side">
+            <label class="review-sync-toggle">
+              <input id="syncReviewTasks" type="checkbox"><span>同步到复习日期</span>
+            </label>
+            <button id="addTask">添加任务</button>
+          </div>
+        </div>
+        <div id="taskList" class="task-list"></div>
+      </div>
+    </div>
+
+    <div id="taskDetailModal" class="modal">
+      <div class="modal-content detail-modal-content">
+        <span class="close detail-close">&times;</span>
+        <h2 id="detailModalTitle">任务详情</h2>
+        <div id="taskDetailBody"></div>
+      </div>
+    </div>
+
+    <div id="editTaskModal" class="modal">
+      <div class="modal-content edit-modal-content">
+        <span class="close edit-close">&times;</span>
+        <h2 id="editModalTitle">编辑任务</h2>
+        <textarea id="editTaskInput" class="edit-task-input" maxlength="500" placeholder="输入任务内容（最多500字）"></textarea>
+        <label class="edit-sync-toggle" id="editSyncToggle" style="display:none;">
+          <input id="editSyncReviews" type="checkbox"><span>同步修改关联的复习任务</span>
+        </label>
+        <div id="editTaskImageArea" class="edit-task-image-area"></div>
+        <div class="edit-modal-actions">
+          <button id="saveTaskEdit" class="edit-btn">保存</button>
+          <button id="cancelTaskEdit" class="delete-btn">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="batchDeleteModal" class="modal">
+      <div class="modal-content batch-delete-modal-content">
+        <span class="close batch-delete-close">&times;</span>
+        <h2>批量删除任务</h2>
+        <p class="batch-delete-warning">此操作将删除指定年月下的所有任务（含关联的复习任务），不可撤回。</p>
+        <div class="batch-delete-selectors">
+          <div class="batch-select-group">
+            <label for="batchDeleteYear">年份</label>
+            <select id="batchDeleteYear"></select>
+          </div>
+          <div class="batch-select-group">
+            <label for="batchDeleteMonth">月份</label>
+            <select id="batchDeleteMonth"></select>
+          </div>
+        </div>
+        <div class="batch-delete-info" id="batchDeleteInfo"></div>
+        <div class="batch-delete-actions">
+          <button id="confirmBatchDelete" class="delete-btn">确认删除</button>
+          <button id="cancelBatchDelete" class="edit-btn">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="settingsPage" class="page-overlay" style="display:none;">
+      <div class="page-container settings-page-container">
+        <div class="page-header">
+          <button class="page-back-btn" id="settingsBackBtn" title="返回">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <h2>设置</h2>
+        </div>
+        <div class="settings-layout">
+          <div class="settings-sidebar">
+            <div class="menu-list">
+              <div class="menu-item active" data-panel="reviewConfig">
+                <div class="menu-item-content">
+                  <div class="menu-item-title">配置复习日期</div>
+                  <div class="menu-item-desc">任务创建后，在第 N 天自动生成复习任务</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="settings-main">
+            <div id="panel-reviewConfig" class="settings-panel">
+              <div class="settings-block">
+                <div class="settings-block-header">
+                  <h3>复习间隔</h3>
+                  <span class="settings-block-hint">任务创建后，在第 N 天自动生成复习任务</span>
+                </div>
+                <div id="intervalsEditor" class="intervals-editor"></div>
+                <div class="settings-block-actions">
+                  <button id="settingsAddInterval" class="edit-btn">+ 增加复习次数</button>
+                  <button id="settingsReset" class="delete-btn">恢复默认</button>
+                </div>
+              </div>
+              <div class="settings-actions">
+                <button id="settingsSave" class="edit-btn">保存设置</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="undoToast" class="undo-toast" aria-live="polite">
+      <div id="undoToastText" class="undo-toast-text"></div>
+      <div class="undo-toast-actions">
+        <button id="undoDelete" class="undo-btn">撤回</button>
+        <button id="dismissUndoToast" class="undo-close-btn" aria-label="关闭提示">&times;</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

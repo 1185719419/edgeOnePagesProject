@@ -173,8 +173,8 @@
             showMessage('message', '登录成功，正在跳转...', 'success');
             localStorage.setItem('user', JSON.stringify(data.user));
             setTimeout(function() {
-              window.location.href = '/';
-            }, 1000);
+              window.location.href = '/main.html';
+            }, 800);
           } else {
             showMessage('message', data.error || '登录失败', 'error');
           }
@@ -224,8 +224,16 @@
           var data = await res.json();
 
           if (res.ok && data.success) {
-            showMessage('regMessage', '注册成功，请返回登录', 'success');
+            showMessage('regMessage', '注册成功，即将跳转到登录...', 'success');
             document.getElementById('registerForm').reset();
+            setTimeout(function() {
+              document.getElementById('registerCard').classList.add('hidden');
+              document.querySelector('.login-card:not(.hidden)').classList.remove('hidden');
+              clearMessages();
+              // 预填账号
+              document.getElementById('username').value = username;
+              document.getElementById('password').focus();
+            }, 1500);
           } else {
             showMessage('regMessage', data.error || '注册失败', 'error');
           }
