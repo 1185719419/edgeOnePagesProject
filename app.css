@@ -134,7 +134,7 @@ h1 {
 
 .day:has(.task-preview-item:hover).today {
     background: #eef4ff;
-    border-color: #f06292;
+    border-color: #667eea;
 }
 
 .day.other-month { opacity: 0.3; }

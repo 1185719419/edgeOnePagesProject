@@ -39,12 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
   currentYear = new Date().getFullYear();
   currentMonth = new Date().getMonth();
 
-  document.getElementById('userDisplay').textContent = '用户: ' + currentUser.username;
-
-  document.getElementById('logoutBtn').addEventListener('click', function() {
-    localStorage.removeItem('user');
-    window.location.href = '/login.html';
-  });
+  document.getElementById('userDisplay').textContent = currentUser.username;
 
   setupEventListeners();
   loadData();
@@ -73,6 +68,10 @@ function setupEventListeners() {
   document.getElementById('settingsSave').addEventListener('click', saveSettings);
   document.getElementById('settingsReset').addEventListener('click', resetSettings);
   document.getElementById('settingsAddInterval').addEventListener('click', addInterval);
+  document.getElementById('settingsLogoutBtn').addEventListener('click', function() {
+    localStorage.removeItem('user');
+    window.location.href = '/login.html';
+  });
 
   document.querySelectorAll('.settings-sidebar .menu-item').forEach(function(item) {
     item.addEventListener('click', function() {
@@ -958,6 +957,12 @@ function executeBatchDelete() {
 // ===== 设置 =====
 function openSettingsPage() {
   renderIntervalsEditor();
+  // 填充账号信息
+  if (currentUser) {
+    document.getElementById('settingsUsername').textContent = currentUser.username;
+    document.getElementById('accountName').textContent = currentUser.username;
+    document.getElementById('avatarLetter').textContent = (currentUser.username || '?')[0].toUpperCase();
+  }
   document.getElementById('settingsPage').style.display = 'block';
 }
 
