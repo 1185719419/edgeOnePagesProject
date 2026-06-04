@@ -120,7 +120,15 @@ export default async function onRequest(context) {
 
     var hashed = await hashPassword(password, user.salt);
     if (hashed !== user.password_hash) {
-      return json({ error: '账号或密码错误' }, 401);
+      return json({
+        error: '账号或密码错误',
+        debug: {
+          saltMatch: user.salt ? user.salt.substring(0, 16) + '...' : '无salt',
+          storedHash: user.password_hash ? user.password_hash.substring(0, 16) + '...' : '无hash',
+          computedHash: hashed.substring(0, 16) + '...',
+          hashLen: { stored: (user.password_hash || '').length, computed: hashed.length },
+        }
+      }, 401);
     }
 
     return json({

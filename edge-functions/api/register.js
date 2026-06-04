@@ -161,7 +161,11 @@ export default async function onRequest(context) {
       created_at: Date.now(),
     });
 
-    return json({ success: true, message: '注册成功' });
+    return json({
+      success: true,
+      message: '注册成功',
+      debug: { salt: salt.substring(0, 16) + '...', hash: passwordHash.substring(0, 16) + '...' },
+    });
   } catch (err) {
     return json({ error: err.message || '服务器内部错误' }, 500);
   }
