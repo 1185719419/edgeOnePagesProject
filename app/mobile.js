@@ -67,6 +67,9 @@
     q('mLogoutBtn').addEventListener('click', logout);
     q('mRevertCancel').addEventListener('click', function() { q('mRevertDialog').style.display='none'; });
     q('mRevertOk').addEventListener('click', executeRevert);
+    // image viewer
+    q('mImgViewerClose').addEventListener('click', closeImageViewer);
+    q('mImageViewer').addEventListener('click', function(e) { if (e.target===this) closeImageViewer(); });
     // overlay dismiss
     q('mTaskSheet').addEventListener('click', function(e) { if (e.target===this) closeSheet(); });
     q('mHistorySheet').addEventListener('click', function(e) { if (e.target===this) q('mHistorySheet').style.display='none'; });
@@ -207,6 +210,13 @@
         openSheet(this.dataset.dk);
       });
     });
+    // bind image click -> viewer
+    el.querySelectorAll('.m-task-imgs img').forEach(function(img) {
+      img.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openImageViewer(this.src);
+      });
+    });
   }
 
   // ===== Sheet (add/edit) =====
@@ -256,6 +266,15 @@
     editImages = { existing:[], newFiles:[], removed:[] };
   }
 
+  function openImageViewer(src) {
+    q('mImgViewerImg').src = src;
+    q('mImageViewer').style.display = 'flex';
+  }
+  function closeImageViewer() {
+    q('mImageViewer').style.display = 'none';
+    q('mImgViewerImg').src = '';
+  }
+
   // ===== 图片处理 =====
   function onPickImage(e) {
     if (!e.target.files.length) return;
@@ -292,6 +311,13 @@
           renderImgPreview();
         });
       });
+      // bind image click -> viewer
+      container.querySelectorAll('.m-img-item img').forEach(function(img) {
+        img.addEventListener('click', function(e) {
+          e.stopPropagation();
+          openImageViewer(this.src);
+        });
+      });
     } else {
       container.innerHTML = newImages.map(function(file, i) {
         return '<div class="m-img-item">'+
@@ -304,6 +330,13 @@
           e.stopPropagation();
           newImages.splice(i,1);
           renderImgPreview();
+        });
+      });
+      // bind image click -> viewer
+      container.querySelectorAll('.m-img-item img').forEach(function(img) {
+        img.addEventListener('click', function(e) {
+          e.stopPropagation();
+          openImageViewer(this.src);
         });
       });
     }

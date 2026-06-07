@@ -283,6 +283,24 @@ body {
 .m-dialog-btns .m-chip { min-width:80px; }
 .m-dialog-btns .m-btn-main { margin-top:0; min-width:100px; width:auto; padding:12px 20px; }
 
+/* ---- 图片查看器 ---- */
+.m-img-viewer {
+  position:fixed; z-index:800; inset:0;
+  background:rgba(0,0,0,0.92);
+  display:flex; align-items:center; justify-content:center;
+}
+.m-img-viewer-close {
+  position:absolute; top:12px; right:12px; z-index:10;
+  width:36px; height:36px; border:none; background:rgba(255,255,255,0.15);
+  color:#fff; font-size:1.4em; border-radius:50%; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.m-img-viewer-close:active { background:rgba(255,255,255,0.3); }
+.m-img-viewer img {
+  max-width:94vw; max-height:94vh; object-fit:contain;
+  border-radius:6px; box-shadow:0 4px 30px rgba(0,0,0,0.5);
+}
+
 /* ---- Desktop / 宽屏适配 ---- */
 @media (min-width: 768px) {
   .m-app {
