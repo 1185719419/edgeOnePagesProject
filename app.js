@@ -438,16 +438,35 @@ function resetTaskImages() {
   renderTaskImagePreviews();
 }
 
-// 将 File 数组转为 base64 数组
+// 将 File 数组转为 base64 数组（带压缩，最大宽高 1024px，JPEG 质量 0.7）
 function filesToBase64(files) {
-  return Promise.all(files.map(function(f) {
-    return new Promise(function(resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function() { resolve(reader.result); };
-      reader.onerror = function() { reject(reader.error); };
-      reader.readAsDataURL(f);
-    });
-  }));
+  return Promise.all(files.map(function(f) { return compressAndEncode(f); }));
+}
+
+function compressAndEncode(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      var img = new Image();
+      img.onload = function() {
+        var maxDim = 1024;
+        var w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = function() { reject(new Error('图片加载失败')); };
+      img.src = reader.result;
+    };
+    reader.onerror = function() { reject(reader.error); };
+    reader.readAsDataURL(file);
+  });
 }
 
 function renderDetailImages(images) {
