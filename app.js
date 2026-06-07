@@ -69,6 +69,7 @@ function setupEventListeners() {
   document.getElementById('settingsReset').addEventListener('click', resetSettings);
   document.getElementById('settingsAddInterval').addEventListener('click', addInterval);
   document.getElementById('settingsLogoutBtn').addEventListener('click', function() {
+    try { localStorage.removeItem('mcs_cache_' + getUserId()); } catch (e) {}
     localStorage.removeItem('user');
     window.location.href = '/login.html';
   });
@@ -184,26 +185,34 @@ function updateCache() {
 
 async function saveTasksToServer() {
   var userId = getUserId();
-  updateCache();
   try {
-    await fetch('/api/tasks?userId=' + encodeURIComponent(userId), {
+    var res = await fetch('/api/tasks?userId=' + encodeURIComponent(userId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tasks: tasks }),
     });
+    if (res.ok) {
+      updateCache();
+      return true;
+    }
   } catch (e) {}
+  return false;
 }
 
 async function saveConfigToServer(arr) {
   var userId = getUserId();
-  updateCache();
   try {
-    await fetch('/api/config?userId=' + encodeURIComponent(userId), {
+    var res = await fetch('/api/config?userId=' + encodeURIComponent(userId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ intervals: arr }),
     });
+    if (res.ok) {
+      updateCache();
+      return true;
+    }
   } catch (e) {}
+  return false;
 }
 
 // ===== 图片处理（base64 直接存储） =====
@@ -512,7 +521,9 @@ function saveDetailEdit() {
   if (!trimmed) return;
   if (trimmed.length > 500) trimmed = trimmed.slice(0, 500);
 
-  var applyChanges = function() {
+  var applyChanges = async function() {
+    var snapshot = JSON.parse(JSON.stringify(tasks));
+
     if (trimmed !== oldText) {
       tasks[dateKey][index].text = trimmed;
       var syncCheckbox = document.getElementById('detailSyncReviews');
@@ -524,7 +535,9 @@ function saveDetailEdit() {
     var finalExisting = detailEditImages.existing;
     tasks[dateKey][index].images = finalExisting.length > 0 ? finalExisting.slice() : undefined;
 
-    saveTasksToServer();
+    var ok = await saveTasksToServer();
+    if (!ok) { tasks = snapshot; return; }
+
     renderCalendar();
     closeTaskDetailModal();
     var modalDateEl = document.getElementById('modalDate');
@@ -669,7 +682,9 @@ function saveTaskEdit() {
   var trimmed = document.getElementById('editTaskInput').value.trim();
   if (trimmed.length > 500) trimmed = trimmed.slice(0, 500);
 
-  var applyChanges = function() {
+  var applyChanges = async function() {
+    var snapshot = JSON.parse(JSON.stringify(tasks));
+
     if (trimmed && trimmed !== oldText) {
       tasks[dateKey][index].text = trimmed;
       var syncCb = document.getElementById('editSyncReviews');
@@ -681,7 +696,9 @@ function saveTaskEdit() {
     var finalExisting = detailEditImages.existing;
     tasks[dateKey][index].images = finalExisting.length > 0 ? finalExisting.slice() : undefined;
 
-    saveTasksToServer();
+    var ok = await saveTasksToServer();
+    if (!ok) { tasks = snapshot; return; }
+
     renderTaskList(dateKey);
     renderCalendar();
     closeEditTaskModal();
@@ -716,7 +733,7 @@ function syncReviewTexts(task, dateKey, oldText, newText) {
 }
 
 // ===== 添加任务 =====
-function addTask() {
+async function addTask() {
   var input = document.getElementById('taskInput');
   var taskText = input.value.trim();
   if (taskText.length > 500) taskText = taskText.slice(0, 500);
@@ -727,24 +744,31 @@ function addTask() {
 
   if (!tasks[dateKey]) tasks[dateKey] = [];
 
-  filesToBase64(newTaskImages).then(function(filenames) {
-    tasks[dateKey].push({
-      text: taskText || '(图片)',
-      isReview: false,
-      createdAt: new Date().toISOString(),
-      images: filenames.length > 0 ? filenames : undefined
-    });
+  var filenames = await filesToBase64(newTaskImages);
 
-    if (syncReviewTasks) {
-      addReviewTasks(dateKey, taskText || '(图片)', filenames);
-    }
+  var snapshot = JSON.parse(JSON.stringify(tasks));
 
-    saveTasksToServer();
-    resetTaskComposer();
-    resetTaskImages();
-    renderTaskList(dateKey);
-    renderCalendar();
+  tasks[dateKey].push({
+    text: taskText,
+    isReview: false,
+    createdAt: new Date().toISOString(),
+    images: filenames.length > 0 ? filenames : undefined
   });
+
+  if (syncReviewTasks) {
+    addReviewTasks(dateKey, taskText, filenames);
+  }
+
+  var ok = await saveTasksToServer();
+  if (!ok) {
+    tasks = snapshot;
+    return;
+  }
+
+  resetTaskComposer();
+  resetTaskImages();
+  renderTaskList(dateKey);
+  renderCalendar();
 }
 
 function addReviewTasks(originalDateKey, taskText, images) {
@@ -811,28 +835,34 @@ function showDeleteChoice(dateKey, index, linkedCount) {
     '<button class="delete-btn" style="background:#d83a52;color:#fff" onclick="deleteTaskLinked(\'' + dateKey + '\',' + index + ')">删除全部关联(' + (linkedCount + 1) + '条)</button>';
 }
 
-function deleteTaskSingle(dateKey, index) {
+async function deleteTaskSingle(dateKey, index) {
   var task = tasks[dateKey] && tasks[dateKey][index];
   if (!task) return;
 
   if (editingTask && editingTask.dateKey === dateKey && editingTask.index === index) closeEditTaskModal();
+
+  var snapshot = JSON.parse(JSON.stringify(tasks));
 
   lastDeletedAction = { items: [{ dateKey: dateKey, index: index, task: cloneTask(task) }] };
 
   tasks[dateKey].splice(index, 1);
   if (tasks[dateKey].length === 0) delete tasks[dateKey];
 
-  saveTasksToServer();
+  var ok = await saveTasksToServer();
+  if (!ok) { tasks = snapshot; lastDeletedAction = null; return; }
+
   renderTaskList(document.getElementById('modalDate').dataset.dateKey);
   renderCalendar();
   showUndoToast(lastDeletedAction);
 }
 
-function deleteTaskLinked(dateKey, index) {
+async function deleteTaskLinked(dateKey, index) {
   var actionItems = createDeleteAction(dateKey, index);
   if (!actionItems || actionItems.length === 0) return;
 
   if (editingTask && editingTask.dateKey === dateKey && editingTask.index === index) closeEditTaskModal();
+
+  var snapshot = JSON.parse(JSON.stringify(tasks));
 
   applyDeleteAction(actionItems);
 
@@ -842,7 +872,9 @@ function deleteTaskLinked(dateKey, index) {
     })
   };
 
-  saveTasksToServer();
+  var ok = await saveTasksToServer();
+  if (!ok) { tasks = snapshot; lastDeletedAction = null; return; }
+
   renderTaskList(document.getElementById('modalDate').dataset.dateKey);
   renderCalendar();
   showUndoToast(lastDeletedAction);
@@ -911,7 +943,7 @@ function hideUndoToast(clearAction) {
   if (clearAction) lastDeletedAction = null;
 }
 
-function undoLastDelete() {
+async function undoLastDelete() {
   if (!lastDeletedAction) return;
 
   var items = lastDeletedAction.items.slice().sort(function(a, b) {
@@ -919,12 +951,16 @@ function undoLastDelete() {
     return a.dateKey.localeCompare(b.dateKey);
   });
 
+  var snapshot = JSON.parse(JSON.stringify(tasks));
+
   items.forEach(function(item) {
     if (!tasks[item.dateKey]) tasks[item.dateKey] = [];
     tasks[item.dateKey].splice(item.index, 0, cloneTask(item.task));
   });
 
-  saveTasksToServer();
+  var ok = await saveTasksToServer();
+  if (!ok) { tasks = snapshot; return; }
+
   renderTaskList(document.getElementById('modalDate').dataset.dateKey);
   renderCalendar();
   hideUndoToast(false);
@@ -969,7 +1005,7 @@ function updateBatchDeleteInfo() {
   document.getElementById('batchDeleteInfo').textContent = count > 0 ? scope + '共有 ' + count + ' 条任务将被删除' : scope + '没有任务';
 }
 
-function executeBatchDelete() {
+async function executeBatchDelete() {
   var year = parseInt(document.getElementById('batchDeleteYear').value);
   var month = parseInt(document.getElementById('batchDeleteMonth').value);
   var prefix = month === 0 ? year + '-' : year + '-' + pad(month) + '-';
@@ -977,9 +1013,13 @@ function executeBatchDelete() {
   var keysToDelete = Object.keys(tasks).filter(function(key) { return key.indexOf(prefix) === 0; });
   if (keysToDelete.length === 0) { closeBatchDeleteModal(); return; }
 
+  var snapshot = JSON.parse(JSON.stringify(tasks));
+
   keysToDelete.forEach(function(key) { delete tasks[key]; });
 
-  saveTasksToServer();
+  var ok = await saveTasksToServer();
+  if (!ok) { tasks = snapshot; return; }
+
   closeBatchDeleteModal();
   renderCalendar();
 
@@ -1067,7 +1107,7 @@ function refreshDeleteButtons() {
   });
 }
 
-function saveSettings() {
+async function saveSettings() {
   var inputs = document.querySelectorAll('#intervalsEditor input');
   var arr = [];
   inputs.forEach(function(inp) {
@@ -1075,8 +1115,10 @@ function saveSettings() {
     arr.push(Math.max(1, Math.min(365, v)));
   });
   arr.sort(function(a, b) { return a - b; });
+  var oldIntervals = REVIEW_INTERVALS;
   REVIEW_INTERVALS = arr;
-  saveConfigToServer(arr);
+  var ok = await saveConfigToServer(arr);
+  if (!ok) { REVIEW_INTERVALS = oldIntervals; return; }
 }
 
 function resetSettings() {
