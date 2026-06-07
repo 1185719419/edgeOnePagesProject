@@ -11,18 +11,20 @@
 
   function initMobile() {
     if (inited) return;
-    if (!currentUser) return;
+    // 等 app.js 初始化完成
+    if (typeof currentUser === 'undefined' || currentUser === null) {
+      setTimeout(initMobile, 100);
+      return;
+    }
     inited = true;
     bindEvents();
     renderMonth();
   }
 
-  // 页面加载后初始化
-  document.addEventListener('DOMContentLoaded', initMobile);
-  // 如果 DOMContentLoaded 已经过了（脚本在 body 末尾），直接尝试
-  if (document.readyState !== 'loading') {
-    // 但 app.js 的 init 可能还没跑完，稍微延迟
-    setTimeout(initMobile, 50);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobile);
+  } else {
+    initMobile();
   }
 
   window.addEventListener('dataready', function() {

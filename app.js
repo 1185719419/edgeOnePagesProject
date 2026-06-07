@@ -321,7 +321,7 @@ async function loadData() {
     if (cached && cached.tasks) {
       tasks = cached.tasks;
       REVIEW_INTERVALS = cached.intervals || DEFAULT_INTERVALS.slice();
-      renderCalendar();
+      if (document.body.dataset.page !== 'mobile') renderCalendar();
     }
   } catch (e) {}
 
@@ -359,8 +359,10 @@ async function loadData() {
     localStorage.setItem(cacheKey, JSON.stringify({ tasks: tasks, intervals: REVIEW_INTERVALS }));
   } catch (e) {}
 
-  if (needRerender || (document.getElementById('calendarDays') && !document.getElementById('calendarDays').children.length)) {
-    renderCalendar();
+  if (document.body.dataset.page !== 'mobile') {
+    if (needRerender || (document.getElementById('calendarDays') && !document.getElementById('calendarDays').children.length)) {
+      renderCalendar();
+    }
   }
   window.dispatchEvent(new CustomEvent('dataready'));
 }
