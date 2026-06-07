@@ -714,19 +714,65 @@ h1 {
     margin-top: 2px;
 }
 
-.history-context-menu .history-item .history-type {
+.history-context-menu .history-item.selected {
+    background: #2d3348;
+    border-left-color: #667eea;
+}
+
+.history-context-menu .history-item .history-type-label {
     font-size: 0.7em;
     padding: 2px 8px;
     border-radius: 999px;
     margin-left: 10px;
     flex-shrink: 0;
     font-weight: 600;
+    pointer-events: none;
+    user-select: none;
 }
 
-.history-type.add { background: #1a3a2a; color: #57ab5a; }
-.history-type.delete { background: #3a1a1a; color: #e5534b; }
-.history-type.batch-delete { background: #3a1a1a; color: #e5534b; }
-.history-type.edit { background: #1a2a3a; color: #58a6ff; }
+.history-type-label.add { background: #1a3a2a; color: #57ab5a; }
+.history-type-label.delete { background: #3a1a1a; color: #e5534b; }
+.history-type-label.batch-delete { background: #3a1a1a; color: #e5534b; }
+.history-type-label.edit { background: #1a2a3a; color: #58a6ff; }
+
+.history-confirm-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 12px;
+    border-bottom: 1px solid #2d333f;
+}
+
+.history-confirm-hint {
+    font-size: 0.82em;
+    color: #8b949e;
+    flex: 1;
+}
+
+.history-confirm-yes,
+.history-confirm-no {
+    border: none;
+    cursor: pointer;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 0.8em;
+    font-weight: 600;
+    transition: all 0.15s;
+}
+
+.history-confirm-yes {
+    background: #667eea;
+    color: #fff;
+}
+
+.history-confirm-yes:hover { background: #5568d3; }
+
+.history-confirm-no {
+    background: rgba(255,255,255,0.08);
+    color: #ccc;
+}
+
+.history-confirm-no:hover { background: rgba(255,255,255,0.15); }
 
 .history-context-menu .history-empty {
     padding: 24px 16px;
