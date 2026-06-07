@@ -739,6 +739,10 @@ async function addTask() {
   if (addTaskLock) return;
   addTaskLock = true;
 
+  var btn = document.getElementById('addTask');
+  btn.classList.add('loading');
+  btn.textContent = '添加中...';
+
   try {
     var input = document.getElementById('taskInput');
     var taskText = input.value.trim();
@@ -776,6 +780,8 @@ async function addTask() {
     renderTaskList(dateKey);
     renderCalendar();
   } finally {
+    btn.classList.remove('loading');
+    btn.textContent = '添加任务';
     addTaskLock = false;
   }
 }
