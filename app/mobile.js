@@ -215,7 +215,7 @@
     curEditRef = null;
     newImages = [];
     q('mSheetTitle').textContent = '添加任务';
-    q('mSheetDate').textContent = '日期: '+formatDateKey(dk);
+    q('mSheetDate').value = dk;
     q('mTaskInput').value = '';
     q('mSyncReviews').checked = false;
     q('mSubmitBtn').textContent = '添加任务';
@@ -238,7 +238,7 @@
       removed: []
     };
     q('mSheetTitle').textContent = '编辑任务';
-    q('mSheetDate').textContent = '日期: '+formatDateKey(dk);
+    q('mSheetDate').value = dk;
     q('mTaskInput').value = task.text;
     q('mSyncReviews').checked = false;
     q('mSubmitBtn').textContent = '保存修改';
@@ -312,6 +312,8 @@
   // ===== 提交（添加/编辑） =====
   async function onSubmit() {
     if (isProcessing) return;
+    curDateKey = q('mSheetDate').value;
+    if (!curDateKey) return;
     var input = q('mTaskInput');
     var text = input.value.trim();
     if (text.length > 500) text = text.slice(0,500);
