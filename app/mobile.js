@@ -219,13 +219,52 @@
     });
   }
 
+  function setDateSelects(dk) {
+    var parts = dk.split('-');
+    var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
+    // year options: -2 to +2 from current year
+    var thisYear = new Date().getFullYear();
+    var yHtml = '';
+    for (var yi = thisYear - 2; yi <= thisYear + 2; yi++) {
+      yHtml += '<option value="'+yi+'"'+(yi===y?' selected':'')+'>'+yi+'年</option>';
+    }
+    q('mSheetYear').innerHTML = yHtml;
+    // month
+    var mHtml = '';
+    for (var mi = 1; mi <= 12; mi++) {
+      mHtml += '<option value="'+mi+'"'+(mi===m?' selected':'')+'>'+mi+'月</option>';
+    }
+    q('mSheetMonth').innerHTML = mHtml;
+    // day - depends on year/month
+    renderDaySelect(y, m, d);
+    // bind change to re-render days
+    q('mSheetYear').onchange = function() { renderDaySelect(parseInt(this.value), parseInt(q('mSheetMonth').value), null); };
+    q('mSheetMonth').onchange = function() { renderDaySelect(parseInt(q('mSheetYear').value), parseInt(this.value), null); };
+  }
+
+  function renderDaySelect(y, m, selDay) {
+    var dim = new Date(y, m, 0).getDate();
+    var dHtml = '';
+    for (var di = 1; di <= dim; di++) {
+      dHtml += '<option value="'+di+'"'+(selDay===di?' selected':'')+'>'+di+'日</option>';
+    }
+    q('mSheetDay').innerHTML = dHtml;
+  }
+
+  function getDateFromSelects() {
+    var y = q('mSheetYear').value;
+    var m = pad(parseInt(q('mSheetMonth').value));
+    var d = pad(parseInt(q('mSheetDay').value));
+    return y + '-' + m + '-' + d;
+  }
+
   // ===== Sheet (add/edit) =====
   function openSheet(dk) {
     curDateKey = dk;
     curEditRef = null;
     newImages = [];
     q('mSheetTitle').textContent = '添加任务';
-    q('mSheetDate').value = dk;
+    setDateSelects(dk);
     q('mTaskInput').value = '';
     q('mSyncReviews').checked = false;
     q('mSubmitBtn').textContent = '添加任务';
@@ -248,7 +287,7 @@
       removed: []
     };
     q('mSheetTitle').textContent = '编辑任务';
-    q('mSheetDate').value = dk;
+    setDateSelects(dk);
     q('mTaskInput').value = task.text;
     q('mSyncReviews').checked = false;
     q('mSubmitBtn').textContent = '保存修改';
@@ -345,7 +384,7 @@
   // ===== 提交（添加/编辑） =====
   async function onSubmit() {
     if (isProcessing) return;
-    curDateKey = q('mSheetDate').value;
+    curDateKey = getDateFromSelects();
     if (!curDateKey) return;
     var input = q('mTaskInput');
     var text = input.value.trim();

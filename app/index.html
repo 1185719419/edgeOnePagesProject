@@ -45,7 +45,11 @@
         <button id="mSheetClose" class="m-close-btn">&times;</button>
       </div>
       <div class="m-sheet-body">
-        <input id="mSheetDate" class="m-sheet-date" type="date">
+        <div id="mSheetDate" class="m-sheet-date-row">
+          <select id="mSheetYear" class="m-date-sel"></select>
+          <select id="mSheetMonth" class="m-date-sel"></select>
+          <select id="mSheetDay" class="m-date-sel"></select>
+        </div>
         <textarea id="mTaskInput" class="m-textarea" placeholder="输入任务内容" maxlength="500" rows="2"></textarea>
         <div id="mImgPreview" class="m-img-row"></div>
         <div class="m-sheet-options">
