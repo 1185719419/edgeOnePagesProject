@@ -16,10 +16,17 @@
       </div>
       <h1>记忆曲线任务日历</h1>
       <div class="controls">
-        <button id="prevMonth">&lt;</button>
-        <span id="currentMonth"></span>
-        <button id="nextMonth">&gt;</button>
-        <button id="batchDeleteBtn" class="batch-delete-btn">批量删除</button>
+        <div class="controls-left">
+          <button id="historyBtn" class="history-nav-btn" title="操作历史">&#128337;</button>
+        </div>
+        <div class="controls-center">
+          <button id="prevMonth">&lt;</button>
+          <span id="currentMonth"></span>
+          <button id="nextMonth">&gt;</button>
+        </div>
+        <div class="controls-right">
+          <button id="batchDeleteBtn" class="batch-delete-btn">批量删除</button>
+        </div>
       </div>
     </header>
 
@@ -171,13 +178,7 @@
       </div>
     </div>
 
-    <div id="undoToast" class="undo-toast" aria-live="polite">
-      <div id="undoToastText" class="undo-toast-text"></div>
-      <div class="undo-toast-actions">
-        <button id="undoDelete" class="undo-btn">撤回</button>
-        <button id="dismissUndoToast" class="undo-close-btn" aria-label="关闭提示">&times;</button>
-      </div>
-    </div>
+    <div id="historyContextMenu" class="history-context-menu" style="display:none;"></div>
   </div>
 
   <script src="app.js"></script>

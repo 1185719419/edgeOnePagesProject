@@ -2,14 +2,11 @@
 
 var DEFAULT_INTERVALS = [1, 3, 6, 13, 27];
 var REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
-var UNDO_TOAST_DURATION = 5000;
 
 var currentUser = null;
 var currentYear, currentMonth;
 var tasks = {};
 var editingTask = null;
-var lastDeletedAction = null;
-var undoToastTimer = null;
 var newTaskImages = [];
 var detailEditImages = { existing: [], newFiles: [], removed: [] };
 var detailTaskRef = null;
@@ -32,6 +29,107 @@ function getUserId() {
   return currentUser ? currentUser.id : '';
 }
 
+// ===== 操作历史 =====
+var operationHistory = [];
+var HISTORY_MAX = 50;
+
+function loadHistory() {
+  try {
+    var raw = localStorage.getItem('mcs_history_' + getUserId());
+    if (raw) operationHistory = JSON.parse(raw);
+  } catch (e) { operationHistory = []; }
+}
+
+function saveHistory() {
+  try {
+    var toSave = operationHistory.slice(0, HISTORY_MAX);
+    localStorage.setItem('mcs_history_' + getUserId(), JSON.stringify(toSave));
+  } catch (e) {}
+}
+
+function recordHistory(type, description, snapshot) {
+  operationHistory.unshift({
+    id: Date.now(),
+    time: new Date().toISOString(),
+    type: type,
+    description: description,
+    snapshot: snapshot
+  });
+  if (operationHistory.length > HISTORY_MAX) operationHistory.length = HISTORY_MAX;
+  saveHistory();
+}
+
+function showHistoryMenu(x, y) {
+  var menu = document.getElementById('historyContextMenu');
+  if (!menu) return;
+
+  var html = '<div class="history-header">操作历史（点击回退）</div>';
+  if (operationHistory.length === 0) {
+    html += '<div class="history-empty">暂无操作记录</div>';
+  } else {
+    operationHistory.forEach(function(entry, index) {
+      var time = new Date(entry.time);
+      var timeStr = (time.getMonth() + 1) + '/' + time.getDate() + ' ' +
+        ('0' + time.getHours()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2);
+      html += '<div class="history-item" onclick="revertToHistory(' + index + ')">' +
+        '<div class="history-left">' +
+          '<div class="history-desc">' + escapeHtml(entry.description) + '</div>' +
+          '<div class="history-meta">' + timeStr + '</div>' +
+        '</div>' +
+        '<span class="history-type ' + entry.type + '">' + getTypeLabel(entry.type) + '</span>' +
+      '</div>';
+    });
+  }
+  menu.innerHTML = html;
+  menu.style.display = 'block';
+
+  var menuW = menu.offsetWidth;
+  var menuH = menu.offsetHeight;
+  var winW = window.innerWidth;
+  var winH = window.innerHeight;
+
+  if (x + menuW > winW) x = winW - menuW - 10;
+  if (y + menuH > winH) y = winH - menuH - 10;
+  if (x < 10) x = 10;
+  if (y < 10) y = 10;
+
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+}
+
+function hideHistoryMenu() {
+  var menu = document.getElementById('historyContextMenu');
+  if (menu) menu.style.display = 'none';
+}
+
+function getTypeLabel(type) {
+  switch (type) {
+    case 'add': return '添加';
+    case 'delete': return '删除';
+    case 'batch-delete': return '批量删';
+    case 'edit': return '编辑';
+    default: return '';
+  }
+}
+
+async function revertToHistory(index) {
+  if (index < 0 || index >= operationHistory.length) return;
+  var entry = operationHistory[index];
+  if (!confirm('确定回退到操作「' + entry.description + '」之前的状态吗？')) return;
+
+  tasks = JSON.parse(JSON.stringify(entry.snapshot));
+  operationHistory.splice(0, index + 1);
+  saveHistory();
+
+  var ok = await saveTasksToServer();
+  if (!ok) { loadData(); return; }
+
+  renderCalendar();
+  var modalDateEl = document.getElementById('modalDate');
+  if (modalDateEl.dataset.dateKey) renderTaskList(modalDateEl.dataset.dateKey);
+  hideHistoryMenu();
+}
+
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', function() {
   if (!checkAuth()) return;
@@ -42,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('userDisplay').textContent = currentUser.username;
 
   setupEventListeners();
+  loadHistory();
   loadData();
 });
 
@@ -70,6 +169,7 @@ function setupEventListeners() {
   document.getElementById('settingsAddInterval').addEventListener('click', addInterval);
   document.getElementById('settingsLogoutBtn').addEventListener('click', function() {
     try { localStorage.removeItem('mcs_cache_' + getUserId()); } catch (e) {}
+    try { localStorage.removeItem('mcs_history_' + getUserId()); } catch (e) {}
     localStorage.removeItem('user');
     window.location.href = '/login.html';
   });
@@ -87,8 +187,6 @@ function setupEventListeners() {
   document.getElementById('addTask').addEventListener('click', addTask);
   document.getElementById('saveTaskEdit').addEventListener('click', saveTaskEdit);
   document.getElementById('cancelTaskEdit').addEventListener('click', closeEditTaskModal);
-  document.getElementById('undoDelete').addEventListener('click', undoLastDelete);
-  document.getElementById('dismissUndoToast').addEventListener('click', hideUndoToast);
 
   document.getElementById('batchDeleteBtn').addEventListener('click', openBatchDeleteModal);
   document.getElementById('confirmBatchDelete').addEventListener('click', executeBatchDelete);
@@ -114,7 +212,25 @@ function setupEventListeners() {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); saveTaskEdit(); }
   });
 
+  document.getElementById('calendarDays').addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    showHistoryMenu(e.clientX, e.clientY);
+  });
+
+  var historyBtn = document.getElementById('historyBtn');
+  if (historyBtn) {
+    historyBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var rect = historyBtn.getBoundingClientRect();
+      showHistoryMenu(rect.left, rect.bottom + 4);
+    });
+  }
+
   window.addEventListener('click', function(e) {
+    var menu = document.getElementById('historyContextMenu');
+    if (menu && menu.style.display === 'block' && !menu.contains(e.target) && e.target !== historyBtn) {
+      hideHistoryMenu();
+    }
     if (e.target === document.getElementById('taskModal')) closeModal();
     if (e.target === document.getElementById('taskDetailModal')) closeTaskDetailModal();
     if (e.target === document.getElementById('editTaskModal')) closeEditTaskModal();
@@ -538,6 +654,8 @@ function saveDetailEdit() {
     var ok = await saveTasksToServer();
     if (!ok) { tasks = snapshot; return; }
 
+    recordHistory('edit', '编辑任务: ' + (trimmed || '(图片)').slice(0, 20), snapshot);
+
     renderCalendar();
     closeTaskDetailModal();
     var modalDateEl = document.getElementById('modalDate');
@@ -699,6 +817,8 @@ function saveTaskEdit() {
     var ok = await saveTasksToServer();
     if (!ok) { tasks = snapshot; return; }
 
+    recordHistory('edit', '编辑任务: ' + (trimmed || '(图片)').slice(0, 20), snapshot);
+
     renderTaskList(dateKey);
     renderCalendar();
     closeEditTaskModal();
@@ -774,6 +894,8 @@ async function addTask() {
       tasks = snapshot;
       return;
     }
+
+    recordHistory('add', '添加任务: ' + (taskText || '(图片)').slice(0, 20), snapshot);
 
     resetTaskComposer();
     resetTaskImages();
@@ -858,17 +980,16 @@ async function deleteTaskSingle(dateKey, index) {
 
   var snapshot = JSON.parse(JSON.stringify(tasks));
 
-  lastDeletedAction = { items: [{ dateKey: dateKey, index: index, task: cloneTask(task) }] };
-
   tasks[dateKey].splice(index, 1);
   if (tasks[dateKey].length === 0) delete tasks[dateKey];
 
   var ok = await saveTasksToServer();
-  if (!ok) { tasks = snapshot; lastDeletedAction = null; return; }
+  if (!ok) { tasks = snapshot; return; }
+
+  recordHistory('delete', '删除任务: ' + (task.text || '(图片)').slice(0, 20), snapshot);
 
   renderTaskList(document.getElementById('modalDate').dataset.dateKey);
   renderCalendar();
-  showUndoToast(lastDeletedAction);
 }
 
 async function deleteTaskLinked(dateKey, index) {
@@ -881,18 +1002,13 @@ async function deleteTaskLinked(dateKey, index) {
 
   applyDeleteAction(actionItems);
 
-  lastDeletedAction = {
-    items: actionItems.map(function(item) {
-      return { dateKey: item.dateKey, index: item.index, task: cloneTask(item.task) };
-    })
-  };
-
   var ok = await saveTasksToServer();
-  if (!ok) { tasks = snapshot; lastDeletedAction = null; return; }
+  if (!ok) { tasks = snapshot; return; }
+
+  recordHistory('delete', '删除 ' + actionItems.length + ' 条关联任务', snapshot);
 
   renderTaskList(document.getElementById('modalDate').dataset.dateKey);
   renderCalendar();
-  showUndoToast(lastDeletedAction);
 }
 
 function cloneTask(t) {
@@ -937,49 +1053,6 @@ function applyDeleteAction(actionItems) {
     tasks[item.dateKey].splice(item.index, 1);
     if (tasks[item.dateKey].length === 0) delete tasks[item.dateKey];
   });
-}
-
-// ===== 撤回 =====
-function showUndoToast(action) {
-  var toast = document.getElementById('undoToast');
-  var text = document.getElementById('undoToastText');
-  var count = action.items.length;
-  text.textContent = count === 1 ? '已快速删除 1 条任务' : '已快速删除 ' + count + ' 条任务';
-  toast.classList.add('show');
-  if (undoToastTimer) clearTimeout(undoToastTimer);
-  undoToastTimer = setTimeout(function() { hideUndoToast(); }, UNDO_TOAST_DURATION);
-}
-
-function hideUndoToast(clearAction) {
-  if (clearAction === undefined) clearAction = true;
-  var toast = document.getElementById('undoToast');
-  toast.classList.remove('show');
-  if (undoToastTimer) { clearTimeout(undoToastTimer); undoToastTimer = null; }
-  if (clearAction) lastDeletedAction = null;
-}
-
-async function undoLastDelete() {
-  if (!lastDeletedAction) return;
-
-  var items = lastDeletedAction.items.slice().sort(function(a, b) {
-    if (a.dateKey === b.dateKey) return a.index - b.index;
-    return a.dateKey.localeCompare(b.dateKey);
-  });
-
-  var snapshot = JSON.parse(JSON.stringify(tasks));
-
-  items.forEach(function(item) {
-    if (!tasks[item.dateKey]) tasks[item.dateKey] = [];
-    tasks[item.dateKey].splice(item.index, 0, cloneTask(item.task));
-  });
-
-  var ok = await saveTasksToServer();
-  if (!ok) { tasks = snapshot; return; }
-
-  renderTaskList(document.getElementById('modalDate').dataset.dateKey);
-  renderCalendar();
-  hideUndoToast(false);
-  lastDeletedAction = null;
 }
 
 // ===== 批量删除 =====
@@ -1028,12 +1101,18 @@ async function executeBatchDelete() {
   var keysToDelete = Object.keys(tasks).filter(function(key) { return key.indexOf(prefix) === 0; });
   if (keysToDelete.length === 0) { closeBatchDeleteModal(); return; }
 
+  var totalCount = 0;
+  keysToDelete.forEach(function(key) { totalCount += (tasks[key] || []).length; });
+
   var snapshot = JSON.parse(JSON.stringify(tasks));
 
   keysToDelete.forEach(function(key) { delete tasks[key]; });
 
   var ok = await saveTasksToServer();
   if (!ok) { tasks = snapshot; return; }
+
+  var scope = month === 0 ? year + '年全年' : year + '年' + month + '月';
+  recordHistory('batch-delete', '批量删除 ' + scope + ' ' + totalCount + '条', snapshot);
 
   closeBatchDeleteModal();
   renderCalendar();

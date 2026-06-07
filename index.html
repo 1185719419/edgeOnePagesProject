@@ -41,6 +41,7 @@
           '</div>';
         document.getElementById('landingLogout').addEventListener('click', function() {
           try { localStorage.removeItem('mcs_cache_' + user.id); } catch (e) {}
+          try { localStorage.removeItem('mcs_history_' + user.id); } catch (e) {}
           localStorage.removeItem('user');
           window.location.reload();
         });
