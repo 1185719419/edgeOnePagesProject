@@ -273,3 +273,25 @@ body {
 .m-dialog-btns { display:flex; gap:10px; justify-content:center; }
 .m-dialog-btns .m-chip { min-width:80px; }
 .m-dialog-btns .m-btn-main { margin-top:0; min-width:100px; width:auto; padding:12px 20px; }
+
+/* ---- Desktop / 宽屏适配 ---- */
+@media (min-width: 768px) {
+  .m-app {
+    max-width: 720px;
+  }
+  .m-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .m-app {
+    max-width: 960px;
+  }
+  .m-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

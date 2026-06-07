@@ -8,17 +8,20 @@
   var activeDate = null;
   var pendingRevertIdx = -1;
   var inited = false;
+  var dataReady = false;
 
   function initMobile() {
     if (inited) return;
-    // 等 app.js 初始化完成
     if (typeof currentUser === 'undefined' || currentUser === null) {
       setTimeout(initMobile, 100);
       return;
     }
     inited = true;
     bindEvents();
-    renderMonth();
+    // Only render if data is already loaded, otherwise wait for dataready
+    if (dataReady) {
+      renderMonth();
+    }
   }
 
   if (document.readyState === 'loading') {
@@ -28,7 +31,10 @@
   }
 
   window.addEventListener('dataready', function() {
-    renderMonth();
+    dataReady = true;
+    if (inited) {
+      renderMonth();
+    }
   });
 
   function q(id) { return document.getElementById(id); }
