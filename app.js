@@ -294,6 +294,13 @@ function setupEventListeners() {
     });
   }
 
+  // image viewer
+  var viewer = document.getElementById('imgViewer');
+  if (viewer) {
+    document.getElementById('imgViewerClose').addEventListener('click', closeImageViewer);
+    viewer.addEventListener('click', function(e) { if (e.target === viewer) closeImageViewer(); });
+  }
+
   window.addEventListener('click', function(e) {
     var menu = document.getElementById('historyContextMenu');
     if (menu && menu.style.display === 'block' && !menu.contains(e.target) && e.target !== historyBtn) {
@@ -422,12 +429,21 @@ function removeTaskImage(index) {
   renderTaskImagePreviews();
 }
 
+function openImageViewer(src) {
+  document.getElementById('imgViewerImg').src = src;
+  document.getElementById('imgViewer').style.display = 'flex';
+}
+function closeImageViewer() {
+  document.getElementById('imgViewer').style.display = 'none';
+  document.getElementById('imgViewerImg').src = '';
+}
+
 function renderTaskImagePreviews() {
   var container = document.getElementById('taskImagePreviews');
   if (newTaskImages.length === 0) { container.innerHTML = ''; return; }
   container.innerHTML = newTaskImages.map(function(file, i) {
     return '<div class="task-image-preview">' +
-      '<img src="' + URL.createObjectURL(file) + '" alt="">' +
+      '<img src="' + URL.createObjectURL(file) + '" alt="" onclick="openImageViewer(this.src)">' +
       '<button class="img-remove-btn" onclick="removeTaskImage(' + i + ')" title="移除">&times;</button>' +
       '</div>';
   }).join('');
@@ -473,7 +489,7 @@ function renderDetailImages(images) {
   if (!images || images.length === 0) return '';
   return '<div class="task-detail-images">' +
     images.map(function(img) {
-      return '<img src="' + img + '" alt="" onclick="this.classList.toggle(\'expanded\')">';
+      return '<img src="' + img + '" alt="" onclick="openImageViewer(this.src)">';
     }).join('') +
     '</div>';
 }
@@ -484,7 +500,7 @@ function renderTaskListThumbs(images) {
   var show = images.slice(0, maxShow);
   var extra = images.length > maxShow ? '<div class="tl-thumb-more">+' + (images.length - maxShow) + '</div>' : '';
   return '<div class="tl-thumbs">' +
-    show.map(function(img) { return '<div class="tl-thumb"><img src="' + img + '" alt=""></div>'; }).join('') +
+    show.map(function(img) { return '<div class="tl-thumb"><img src="' + img + '" alt="" onclick="event.stopPropagation();openImageViewer(this.src)"></div>'; }).join('') +
     extra + '</div>';
 }
 
@@ -494,7 +510,7 @@ function renderCalendarThumbs(images) {
   var show = images.slice(0, maxShow);
   var extra = images.length > maxShow ? '<span class="cal-thumb-more">+' + (images.length - maxShow) + '</span>' : '';
   return '<span class="cal-thumbs">' +
-    show.map(function(img) { return '<span class="cal-thumb"><img src="' + img + '" alt=""></span>'; }).join('') +
+    show.map(function(img) { return '<span class="cal-thumb"><img src="' + img + '" alt="" onclick="event.stopPropagation();openImageViewer(this.src)"></span>'; }).join('') +
     extra + '</span>';
 }
 
@@ -840,13 +856,13 @@ function renderEditTaskImages(containerId, inputId) {
     html += '<div class="task-image-previews">';
     existing.forEach(function(filename, i) {
       html += '<div class="task-image-preview">' +
-        '<img src="' + filename + '" alt="">' +
+        '<img src="' + filename + '" alt="" onclick="openImageViewer(this.src)">' +
         '<button class="img-remove-btn" onclick="removeEditExistingImage(' + i + ',\'' + containerId + '\',\'' + inputId + '\')" title="移除">&times;</button>' +
         '</div>';
     });
     newFiles.forEach(function(file, i) {
       html += '<div class="task-image-preview">' +
-        '<img src="' + URL.createObjectURL(file) + '" alt="">' +
+        '<img src="' + URL.createObjectURL(file) + '" alt="" onclick="openImageViewer(this.src)">' +
         '<button class="img-remove-btn" onclick="removeEditNewImage(' + i + ',\'' + containerId + '\',\'' + inputId + '\')" title="移除">&times;</button>' +
         '</div>';
     });

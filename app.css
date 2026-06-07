@@ -1253,3 +1253,22 @@ h1 {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
 }
+
+/* ---- 图片查看器 ---- */
+.img-viewer {
+  position:fixed; z-index:2000; inset:0;
+  background:rgba(0,0,0,0.92);
+  display:flex; align-items:center; justify-content:center;
+}
+.img-viewer-close {
+  position:absolute; top:16px; right:16px; z-index:10;
+  width:40px; height:40px; border:none; background:rgba(255,255,255,0.12);
+  color:#fff; font-size:1.6em; border-radius:50%; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.2s;
+}
+.img-viewer-close:hover { background:rgba(255,255,255,0.25); }
+.img-viewer img {
+  max-width:94vw; max-height:94vh; object-fit:contain;
+  border-radius:8px; box-shadow:0 4px 40px rgba(0,0,0,0.6);
+}
