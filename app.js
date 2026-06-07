@@ -123,8 +123,12 @@ async function executeRevert() {
   if (index < 0 || index >= operationHistory.length) return;
 
   var entry = operationHistory[index];
+  // 恢复到该操作之后的状态：取下一条更早记录的 snapshot
+  // index=0 是最新操作，直接用它的 snapshot（操作前的状态=撤销最新操作）
+  // index>0 时取下一条的 snapshot（即当前操作完成后、下一个操作之前的状态）
+  var snapshotToRestore = index === 0 ? entry.snapshot : operationHistory[index - 1].snapshot;
   var preRevertSnapshot = JSON.parse(JSON.stringify(tasks));
-  tasks = JSON.parse(JSON.stringify(entry.snapshot));
+  tasks = JSON.parse(JSON.stringify(snapshotToRestore));
 
   var ok = await saveTasksToServer();
   if (!ok) { loadData(); return; }
