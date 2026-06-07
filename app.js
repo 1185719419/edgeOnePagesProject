@@ -123,12 +123,14 @@ async function executeRevert() {
   if (index < 0 || index >= operationHistory.length) return;
 
   var entry = operationHistory[index];
+  var preRevertSnapshot = JSON.parse(JSON.stringify(tasks));
   tasks = JSON.parse(JSON.stringify(entry.snapshot));
-  operationHistory.splice(0, index + 1);
-  saveHistory();
 
   var ok = await saveTasksToServer();
   if (!ok) { loadData(); return; }
+
+  // record this revert as a new history entry (don't delete old ones)
+  recordHistory('edit', '回退: ' + entry.description, preRevertSnapshot);
 
   hideHistoryMenu();
   renderCalendar();
