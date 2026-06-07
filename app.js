@@ -65,46 +65,23 @@ function showHistoryMenu(x, y) {
 
   var html = '<div class="history-header">操作历史</div>';
   if (operationHistory.length === 0) {
-    html += '<div class="history-empty">暂无操作记录</div>';
+    html += '<div class="history-empty">暂无操作记录<br><small>添加或删除任务后会自动记录</small></div>';
   } else {
     operationHistory.forEach(function(entry, index) {
       var time = new Date(entry.time);
       var timeStr = (time.getMonth() + 1) + '/' + time.getDate() + ' ' +
         ('0' + time.getHours()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2);
-      html += '<div class="history-item" data-index="' + index + '">' +
+      html += '<div class="history-item" data-index="' + index + '" onclick="revertToHistory(' + index + ')">' +
+        '<span class="history-icon history-icon-' + entry.type + '">' + getTypeIcon(entry.type) + '</span>' +
         '<div class="history-left">' +
           '<div class="history-desc">' + escapeHtml(entry.description) + '</div>' +
           '<div class="history-meta">' + timeStr + '</div>' +
         '</div>' +
-        '<span class="history-type-label ' + entry.type + '">' + getTypeLabel(entry.type) + '</span>' +
-      '</div>' +
-      '<div class="history-confirm-row" id="confirmRow-' + index + '" style="display:none;">' +
-        '<span class="history-confirm-hint">回退到此操作之前的状态？</span>' +
-        '<button class="history-confirm-yes" onclick="event.stopPropagation();revertToHistory(' + index + ')">确认回退</button>' +
-        '<button class="history-confirm-no" onclick="event.stopPropagation();cancelHistorySelect()">取消</button>' +
+        '<span class="history-arrow">&larr;</span>' +
       '</div>';
     });
   }
   menu.innerHTML = html;
-
-  // bind click to toggle confirm row
-  var items = menu.querySelectorAll('.history-item');
-  items.forEach(function(item) {
-    item.addEventListener('click', function() {
-      var idx = this.dataset.index;
-      var confirmRow = document.getElementById('confirmRow-' + idx);
-      if (!confirmRow) return;
-      var isOpen = confirmRow.style.display !== 'none';
-      // close all
-      menu.querySelectorAll('.history-confirm-row').forEach(function(r) { r.style.display = 'none'; });
-      menu.querySelectorAll('.history-item').forEach(function(el) { el.classList.remove('selected'); });
-      if (!isOpen) {
-        confirmRow.style.display = 'flex';
-        this.classList.add('selected');
-      }
-    });
-  });
-
   menu.style.display = 'block';
 
   var menuW = menu.offsetWidth;
@@ -121,19 +98,58 @@ function showHistoryMenu(x, y) {
   menu.style.top = y + 'px';
 }
 
-function cancelHistorySelect() {
-  var menu = document.getElementById('historyContextMenu');
-  if (!menu) return;
-  menu.querySelectorAll('.history-confirm-row').forEach(function(r) { r.style.display = 'none'; });
-  menu.querySelectorAll('.history-item').forEach(function(el) { el.classList.remove('selected'); });
+var revertToastTimer = null;
+
+function showRevertToast(description) {
+  var existing = document.getElementById('revertToast');
+  if (existing) existing.remove();
+  if (revertToastTimer) clearTimeout(revertToastTimer);
+
+  var toast = document.createElement('div');
+  toast.id = 'revertToast';
+  toast.textContent = '已回退: ' + description;
+  toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:2000;' +
+    'background:#1c1f2a;color:#e6edf3;padding:10px 24px;border-radius:20px;font-size:0.9em;' +
+    'box-shadow:0 4px 20px rgba(0,0,0,0.3);opacity:0;transition:opacity 0.3s,transform 0.3s;' +
+    'transform:translateX(-50%) translateY(-10px);pointer-events:none;';
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(function() {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+  });
+
+  revertToastTimer = setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(-10px)';
+    setTimeout(function() { if (toast.parentNode) toast.remove(); }, 300);
+  }, 2000);
 }
 
 function hideHistoryMenu() {
   var menu = document.getElementById('historyContextMenu');
-  if (menu) menu.style.display = 'none';
+  if (menu) {
+    menu.style.opacity = '0';
+    menu.style.transform = 'scale(0.95)';
+    setTimeout(function() {
+      menu.style.display = 'none';
+      menu.style.opacity = '';
+      menu.style.transform = '';
+    }, 150);
+  }
 }
 
-function getTypeLabel(type) {
+function getTypeIcon(type) {
+  switch (type) {
+    case 'add': return '+';
+    case 'delete': return '&times;';
+    case 'batch-delete': return '&times;';
+    case 'edit': return '&vellip;';
+    default: return '';
+  }
+}
+
+function getTypeLabel(type) {  // kept for recordHistory description only
   switch (type) {
     case 'add': return '添加';
     case 'delete': return '删除';
@@ -147,6 +163,13 @@ async function revertToHistory(index) {
   if (index < 0 || index >= operationHistory.length) return;
   var entry = operationHistory[index];
 
+  // flash the clicked item green
+  var menu = document.getElementById('historyContextMenu');
+  if (menu) {
+    var item = menu.querySelector('[data-index="' + index + '"]');
+    if (item) { item.classList.add('reverting'); }
+  }
+
   tasks = JSON.parse(JSON.stringify(entry.snapshot));
   operationHistory.splice(0, index + 1);
   saveHistory();
@@ -156,14 +179,16 @@ async function revertToHistory(index) {
 
   hideHistoryMenu();
   renderCalendar();
-  // flash the calendar for visual feedback
+  showRevertToast(entry.description);
+
+  // pulse the calendar
   var cal = document.querySelector('.calendar');
   if (cal) {
     cal.style.transition = 'none';
-    cal.style.boxShadow = '0 0 0 6px rgba(102,126,234,0.4)';
+    cal.style.boxShadow = '0 0 0 8px rgba(102,126,234,0.35)';
     cal.style.borderRadius = '12px';
     requestAnimationFrame(function() {
-      cal.style.transition = 'box-shadow 0.6s ease-out';
+      cal.style.transition = 'box-shadow 0.5s ease-out';
       cal.style.boxShadow = 'none';
     });
   }
