@@ -500,7 +500,7 @@ function renderTaskListThumbs(images) {
   var show = images.slice(0, maxShow);
   var extra = images.length > maxShow ? '<div class="tl-thumb-more">+' + (images.length - maxShow) + '</div>' : '';
   return '<div class="tl-thumbs">' +
-    show.map(function(img) { return '<div class="tl-thumb"><img src="' + img + '" alt="" onclick="event.stopPropagation();openImageViewer(this.src)"></div>'; }).join('') +
+    show.map(function(img) { return '<div class="tl-thumb"><img src="' + img + '" alt=""></div>'; }).join('') +
     extra + '</div>';
 }
 
@@ -510,7 +510,7 @@ function renderCalendarThumbs(images) {
   var show = images.slice(0, maxShow);
   var extra = images.length > maxShow ? '<span class="cal-thumb-more">+' + (images.length - maxShow) + '</span>' : '';
   return '<span class="cal-thumbs">' +
-    show.map(function(img) { return '<span class="cal-thumb"><img src="' + img + '" alt="" onclick="event.stopPropagation();openImageViewer(this.src)"></span>'; }).join('') +
+    show.map(function(img) { return '<span class="cal-thumb"><img src="' + img + '" alt=""></span>'; }).join('') +
     extra + '</span>';
 }
 
