@@ -152,7 +152,11 @@ body {
   width:100%; padding:12px; border:2px solid var(--c-border); border-radius:10px;
   font-size:1em; color:var(--c-accent); font-weight:600; background:#fafbfc;
   outline:none; font-family:inherit; margin-bottom:10px;
+  box-sizing:border-box; min-width:0;
+  -webkit-appearance:none; appearance:none;
 }
+.m-sheet-date::-webkit-datetime-edit { padding:0; }
+.m-sheet-date::-webkit-calendar-picker-indicator { cursor:pointer; }
 .m-sheet-date:focus { border-color:var(--c-accent); background:#fff; }
 .m-textarea {
   width:100%; padding:12px; border:2px solid var(--c-border); border-radius:10px;

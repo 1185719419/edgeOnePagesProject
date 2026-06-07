@@ -356,7 +356,7 @@
     }
 
     var ok = await saveTasksToServer();
-    if (!ok) { tasks = snapshot; alert('保存失败，请检查网络后重试'); return; }
+    if (!ok) { tasks = snapshot; alert('保存失败: ' + (window._lastSaveError || '未知错误')); return; }
     recordHistory('add', '添加任务: '+(text||'(图片)').slice(0,20), snapshot);
     closeSheet();
     renderMonth();
@@ -380,7 +380,7 @@
     tasks[dk][idx].images = finalImgs.length > 0 ? finalImgs : undefined;
 
     var ok = await saveTasksToServer();
-    if (!ok) { tasks = snapshot; alert('保存失败，请检查网络后重试'); return; }
+    if (!ok) { tasks = snapshot; alert('保存失败: ' + (window._lastSaveError || '未知错误')); return; }
     recordHistory('edit', '编辑任务: '+(text||'(图片)').slice(0,20), snapshot);
     closeSheet();
     renderMonth();

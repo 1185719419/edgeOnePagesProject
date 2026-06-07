@@ -376,6 +376,7 @@ function updateCache() {
 
 async function saveTasksToServer() {
   var userId = getUserId();
+  var errMsg = '';
   try {
     var res = await fetch('/api/tasks?userId=' + encodeURIComponent(userId), {
       method: 'POST',
@@ -386,7 +387,10 @@ async function saveTasksToServer() {
       updateCache();
       return true;
     }
-  } catch (e) {}
+    var text = await res.text();
+    try { var j = JSON.parse(text); errMsg = j.error || text; } catch (_) { errMsg = text; }
+  } catch (e) { errMsg = e.message || String(e); }
+  window._lastSaveError = errMsg;
   return false;
 }
 
