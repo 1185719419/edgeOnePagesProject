@@ -518,7 +518,7 @@ function saveDetailEdit() {
 
   var oldText = task.text;
   var trimmed = document.getElementById('detailEditInput').value.trim();
-  if (!trimmed) return;
+  if (!trimmed && detailEditImages.existing.length === 0) return;
   if (trimmed.length > 500) trimmed = trimmed.slice(0, 500);
 
   var applyChanges = async function() {
@@ -733,42 +733,51 @@ function syncReviewTexts(task, dateKey, oldText, newText) {
 }
 
 // ===== 添加任务 =====
+var addTaskLock = false;
+
 async function addTask() {
-  var input = document.getElementById('taskInput');
-  var taskText = input.value.trim();
-  if (taskText.length > 500) taskText = taskText.slice(0, 500);
-  if (!taskText && newTaskImages.length === 0) return;
+  if (addTaskLock) return;
+  addTaskLock = true;
 
-  var dateKey = document.getElementById('modalDate').dataset.dateKey;
-  var syncReviewTasks = document.getElementById('syncReviewTasks').checked;
+  try {
+    var input = document.getElementById('taskInput');
+    var taskText = input.value.trim();
+    if (taskText.length > 500) taskText = taskText.slice(0, 500);
+    if (!taskText && newTaskImages.length === 0) { return; }
 
-  if (!tasks[dateKey]) tasks[dateKey] = [];
+    var dateKey = document.getElementById('modalDate').dataset.dateKey;
+    var syncReviewTasks = document.getElementById('syncReviewTasks').checked;
 
-  var filenames = await filesToBase64(newTaskImages);
+    if (!tasks[dateKey]) tasks[dateKey] = [];
 
-  var snapshot = JSON.parse(JSON.stringify(tasks));
+    var filenames = await filesToBase64(newTaskImages);
 
-  tasks[dateKey].push({
-    text: taskText,
-    isReview: false,
-    createdAt: new Date().toISOString(),
-    images: filenames.length > 0 ? filenames : undefined
-  });
+    var snapshot = JSON.parse(JSON.stringify(tasks));
 
-  if (syncReviewTasks) {
-    addReviewTasks(dateKey, taskText, filenames);
+    tasks[dateKey].push({
+      text: taskText,
+      isReview: false,
+      createdAt: new Date().toISOString(),
+      images: filenames.length > 0 ? filenames : undefined
+    });
+
+    if (syncReviewTasks) {
+      addReviewTasks(dateKey, taskText, filenames);
+    }
+
+    var ok = await saveTasksToServer();
+    if (!ok) {
+      tasks = snapshot;
+      return;
+    }
+
+    resetTaskComposer();
+    resetTaskImages();
+    renderTaskList(dateKey);
+    renderCalendar();
+  } finally {
+    addTaskLock = false;
   }
-
-  var ok = await saveTasksToServer();
-  if (!ok) {
-    tasks = snapshot;
-    return;
-  }
-
-  resetTaskComposer();
-  resetTaskImages();
-  renderTaskList(dateKey);
-  renderCalendar();
 }
 
 function addReviewTasks(originalDateKey, taskText, images) {
