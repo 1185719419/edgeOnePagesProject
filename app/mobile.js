@@ -7,13 +7,23 @@
   var isProcessing = false;
   var activeDate = null;
   var pendingRevertIdx = -1;
+  var inited = false;
 
-  // app.js 加载后触发
-  window.addEventListener('load', function() {
+  function initMobile() {
+    if (inited) return;
     if (!currentUser) return;
+    inited = true;
     bindEvents();
     renderMonth();
-  });
+  }
+
+  // 页面加载后初始化
+  document.addEventListener('DOMContentLoaded', initMobile);
+  // 如果 DOMContentLoaded 已经过了（脚本在 body 末尾），直接尝试
+  if (document.readyState !== 'loading') {
+    // 但 app.js 的 init 可能还没跑完，稍微延迟
+    setTimeout(initMobile, 50);
+  }
 
   window.addEventListener('dataready', function() {
     renderMonth();
@@ -66,6 +76,7 @@
 
   // ===== 渲染月份 =====
   function renderMonth() {
+    var ph = q('mPlaceholder'); if (ph) ph.style.display = 'none';
     var mn = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
     q('mCurrentMonth').textContent = currentYear+'年 '+mn[currentMonth];
 
