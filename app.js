@@ -71,13 +71,12 @@ function showHistoryMenu(x, y) {
       var time = new Date(entry.time);
       var timeStr = (time.getMonth() + 1) + '/' + time.getDate() + ' ' +
         ('0' + time.getHours()).slice(-2) + ':' + ('0' + time.getMinutes()).slice(-2);
-      html += '<div class="history-item" data-index="' + index + '" onclick="revertToHistory(' + index + ')">' +
-        '<span class="history-icon history-icon-' + entry.type + '">' + getTypeIcon(entry.type) + '</span>' +
+      html += '<div class="history-item" onclick="confirmRevert(' + index + ')">' +
         '<div class="history-left">' +
           '<div class="history-desc">' + escapeHtml(entry.description) + '</div>' +
           '<div class="history-meta">' + timeStr + '</div>' +
         '</div>' +
-        '<span class="history-arrow">&larr;</span>' +
+        '<span class="history-badge history-badge-' + entry.type + '">' + getTypeLabel(entry.type) + '</span>' +
       '</div>';
     });
   }
@@ -96,6 +95,58 @@ function showHistoryMenu(x, y) {
 
   menu.style.left = x + 'px';
   menu.style.top = y + 'px';
+}
+
+var pendingRevertIndex = -1;
+
+function confirmRevert(index) {
+  if (index < 0 || index >= operationHistory.length) return;
+  pendingRevertIndex = index;
+  var entry = operationHistory[index];
+  var dialog = document.getElementById('revertConfirmDialog');
+  if (!dialog) return;
+  document.getElementById('revertConfirmDesc').textContent = entry.description;
+  dialog.style.display = 'flex';
+}
+
+function cancelRevert() {
+  pendingRevertIndex = -1;
+  var dialog = document.getElementById('revertConfirmDialog');
+  if (dialog) dialog.style.display = 'none';
+}
+
+async function executeRevert() {
+  var index = pendingRevertIndex;
+  pendingRevertIndex = -1;
+  var dialog = document.getElementById('revertConfirmDialog');
+  if (dialog) dialog.style.display = 'none';
+  if (index < 0 || index >= operationHistory.length) return;
+
+  var entry = operationHistory[index];
+  tasks = JSON.parse(JSON.stringify(entry.snapshot));
+  operationHistory.splice(0, index + 1);
+  saveHistory();
+
+  var ok = await saveTasksToServer();
+  if (!ok) { loadData(); return; }
+
+  hideHistoryMenu();
+  renderCalendar();
+  showRevertToast(entry.description);
+
+  // pulse the calendar
+  var cal = document.querySelector('.calendar');
+  if (cal) {
+    cal.style.transition = 'none';
+    cal.style.boxShadow = '0 0 0 8px rgba(102,126,234,0.35)';
+    cal.style.borderRadius = '12px';
+    requestAnimationFrame(function() {
+      cal.style.transition = 'box-shadow 0.5s ease-out';
+      cal.style.boxShadow = 'none';
+    });
+  }
+  var modalDateEl = document.getElementById('modalDate');
+  if (modalDateEl.dataset.dateKey) renderTaskList(modalDateEl.dataset.dateKey);
 }
 
 var revertToastTimer = null;
@@ -128,28 +179,10 @@ function showRevertToast(description) {
 
 function hideHistoryMenu() {
   var menu = document.getElementById('historyContextMenu');
-  if (menu) {
-    menu.style.opacity = '0';
-    menu.style.transform = 'scale(0.95)';
-    setTimeout(function() {
-      menu.style.display = 'none';
-      menu.style.opacity = '';
-      menu.style.transform = '';
-    }, 150);
-  }
+  if (menu) menu.style.display = 'none';
 }
 
-function getTypeIcon(type) {
-  switch (type) {
-    case 'add': return '+';
-    case 'delete': return '&times;';
-    case 'batch-delete': return '&times;';
-    case 'edit': return '&vellip;';
-    default: return '';
-  }
-}
-
-function getTypeLabel(type) {  // kept for recordHistory description only
+function getTypeLabel(type) {
   switch (type) {
     case 'add': return '添加';
     case 'delete': return '删除';
@@ -157,43 +190,6 @@ function getTypeLabel(type) {  // kept for recordHistory description only
     case 'edit': return '编辑';
     default: return '';
   }
-}
-
-async function revertToHistory(index) {
-  if (index < 0 || index >= operationHistory.length) return;
-  var entry = operationHistory[index];
-
-  // flash the clicked item green
-  var menu = document.getElementById('historyContextMenu');
-  if (menu) {
-    var item = menu.querySelector('[data-index="' + index + '"]');
-    if (item) { item.classList.add('reverting'); }
-  }
-
-  tasks = JSON.parse(JSON.stringify(entry.snapshot));
-  operationHistory.splice(0, index + 1);
-  saveHistory();
-
-  var ok = await saveTasksToServer();
-  if (!ok) { loadData(); return; }
-
-  hideHistoryMenu();
-  renderCalendar();
-  showRevertToast(entry.description);
-
-  // pulse the calendar
-  var cal = document.querySelector('.calendar');
-  if (cal) {
-    cal.style.transition = 'none';
-    cal.style.boxShadow = '0 0 0 8px rgba(102,126,234,0.35)';
-    cal.style.borderRadius = '12px';
-    requestAnimationFrame(function() {
-      cal.style.transition = 'box-shadow 0.5s ease-out';
-      cal.style.boxShadow = 'none';
-    });
-  }
-  var modalDateEl = document.getElementById('modalDate');
-  if (modalDateEl.dataset.dateKey) renderTaskList(modalDateEl.dataset.dateKey);
 }
 
 // ===== 初始化 =====
@@ -294,6 +290,10 @@ function setupEventListeners() {
     var menu = document.getElementById('historyContextMenu');
     if (menu && menu.style.display === 'block' && !menu.contains(e.target) && e.target !== historyBtn) {
       hideHistoryMenu();
+    }
+    var dialog = document.getElementById('revertConfirmDialog');
+    if (dialog && dialog.style.display === 'flex' && e.target === dialog) {
+      cancelRevert();
     }
     if (e.target === document.getElementById('taskModal')) closeModal();
     if (e.target === document.getElementById('taskDetailModal')) closeTaskDetailModal();

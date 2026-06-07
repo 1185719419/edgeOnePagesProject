@@ -178,6 +178,19 @@
     </div>
 
     <div id="historyContextMenu" class="history-context-menu" style="display:none;"></div>
+
+    <div id="revertConfirmDialog" class="revert-confirm-overlay" style="display:none;">
+      <div class="revert-confirm-card">
+        <div class="revert-confirm-icon">&#8634;</div>
+        <div class="revert-confirm-title">确认回退</div>
+        <div class="revert-confirm-body">将恢复到以下操作之前的状态：</div>
+        <div class="revert-confirm-desc" id="revertConfirmDesc"></div>
+        <div class="revert-confirm-actions">
+          <button class="revert-confirm-cancel" onclick="cancelRevert()">取消</button>
+          <button class="revert-confirm-ok" onclick="executeRevert()">确认回退</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
