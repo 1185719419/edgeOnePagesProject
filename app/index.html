@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>记忆曲线任务日历</title>
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body data-page="mobile">
+  <div class="m-app">
+    <header class="m-header">
+      <button id="mSettingsBtn" class="m-icon-btn" title="设置">&#9881;</button>
+      <div class="m-month-nav">
+        <button id="mPrevMonth" class="m-nav-btn">&lsaquo;</button>
+        <span id="mCurrentMonth" class="m-month-label"></span>
+        <button id="mNextMonth" class="m-nav-btn">&rsaquo;</button>
+      </div>
+      <button id="mHistoryBtn" class="m-icon-btn" title="历史">&#128338;</button>
+    </header>
+
+    <div id="mDateList" class="m-date-list"></div>
+
+    <button id="mFab" class="m-fab" title="添加任务">+</button>
+  </div>
+
+  <!-- 任务列表弹窗 -->
+  <div id="mTaskSheet" class="m-sheet-overlay" style="display:none;">
+    <div class="m-sheet">
+      <div class="m-sheet-handle"></div>
+      <div class="m-sheet-header">
+        <h3 id="mSheetTitle"></h3>
+        <button class="m-sheet-close" onclick="closeTaskSheet()">&times;</button>
+      </div>
+      <div id="mSheetContent" class="m-sheet-body"></div>
+    </div>
+  </div>
+
+  <!-- 添加任务弹窗 -->
+  <div id="mAddModal" class="m-modal-overlay" style="display:none;">
+    <div class="m-modal">
+      <div class="m-modal-header">
+        <h3>添加任务</h3>
+        <button class="m-modal-close" onclick="closeAddModal()">&times;</button>
+      </div>
+      <div class="m-modal-body">
+        <div class="m-modal-date" id="mAddDate"></div>
+        <textarea id="mTaskInput" class="m-input" placeholder="输入任务内容（最多500字）" maxlength="500" rows="3"></textarea>
+        <div class="m-image-area">
+          <div id="mImagePreviews" class="m-image-previews"></div>
+          <button id="mAddImageBtn" class="m-btn-outline">+ 添加图片</button>
+          <input id="mImageInput" type="file" accept="image/*" multiple hidden>
+        </div>
+        <label class="m-checkbox">
+          <input id="mSyncReviews" type="checkbox"><span>同步到复习日期</span>
+        </label>
+        <button id="mAddBtn" class="m-btn-primary m-btn-full">添加任务</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑任务弹窗 -->
+  <div id="mEditModal" class="m-modal-overlay" style="display:none;">
+    <div class="m-modal">
+      <div class="m-modal-header">
+        <h3>编辑任务</h3>
+        <button class="m-modal-close" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div class="m-modal-body">
+        <textarea id="mEditInput" class="m-input" placeholder="输入任务内容" maxlength="500" rows="3"></textarea>
+        <div class="m-image-area">
+          <div id="mEditImagePreviews" class="m-image-previews"></div>
+          <button id="mEditAddImageBtn" class="m-btn-outline">+ 添加图片</button>
+          <input id="mEditImageInput" type="file" accept="image/*" multiple hidden>
+        </div>
+        <button id="mSaveEditBtn" class="m-btn-primary m-btn-full">保存</button>
+        <button id="mDeleteTaskBtn" class="m-btn-danger m-btn-full" style="margin-top:8px;">删除任务</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置页面 -->
+  <div id="mSettingsPage" class="m-page-overlay" style="display:none;">
+    <div class="m-page">
+      <div class="m-page-header">
+        <button id="mSettingsBack" class="m-icon-btn">&#8592;</button>
+        <h3>设置</h3>
+      </div>
+      <div class="m-page-body">
+        <div class="m-section">
+          <h4 class="m-section-title">复习间隔</h4>
+          <p class="m-section-hint">任务创建后在第N天自动生成复习任务</p>
+          <div id="mIntervalsEditor" class="m-intervals-editor"></div>
+          <div class="m-row-btns">
+            <button id="mAddInterval" class="m-btn-outline">+ 增加</button>
+            <button id="mResetIntervals" class="m-btn-outline">恢复默认</button>
+          </div>
+          <button id="mSaveSettings" class="m-btn-primary m-btn-full" style="margin-top:12px;">保存设置</button>
+        </div>
+        <div class="m-section">
+          <h4 class="m-section-title">批量删除</h4>
+          <p class="m-section-hint">删除指定年月下的所有任务</p>
+          <div class="m-row-selects">
+            <select id="mBatchYear" class="m-select"></select>
+            <select id="mBatchMonth" class="m-select"></select>
+          </div>
+          <button id="mBatchDelete" class="m-btn-danger m-btn-full" style="margin-top:12px;">批量删除</button>
+        </div>
+        <div class="m-section">
+          <h4 class="m-section-title">账号</h4>
+          <p class="m-section-hint" id="mAccountName"></p>
+          <button id="mLogoutBtn" class="m-btn-danger-outline m-btn-full" style="margin-top:12px;">退出登录</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史记录弹窗 -->
+  <div id="mHistorySheet" class="m-sheet-overlay" style="display:none;">
+    <div class="m-sheet">
+      <div class="m-sheet-handle"></div>
+      <div class="m-sheet-header">
+        <h3>操作历史</h3>
+        <button class="m-sheet-close" onclick="closeHistorySheet()">&times;</button>
+      </div>
+      <div id="mHistoryContent" class="m-sheet-body"></div>
+    </div>
+  </div>
+
+  <!-- 回退确认弹窗 -->
+  <div id="mRevertDialog" class="m-dialog-overlay" style="display:none;">
+    <div class="m-dialog">
+      <div class="m-dialog-icon">&#8634;</div>
+      <p class="m-dialog-text">确认回退到该操作之前？</p>
+      <p class="m-dialog-detail" id="mRevertDetail"></p>
+      <div class="m-dialog-btns">
+        <button class="m-btn-outline" onclick="cancelMobileRevert()">取消</button>
+        <button class="m-btn-primary" onclick="executeMobileRevert()">确认回退</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../app.js"></script>
+  <script src="mobile.js"></script>
+</body>
+</html>

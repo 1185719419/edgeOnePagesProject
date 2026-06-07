@@ -205,7 +205,9 @@ document.addEventListener('DOMContentLoaded', function() {
   currentYear = new Date().getFullYear();
   currentMonth = new Date().getMonth();
 
-  setupEventListeners();
+  if (document.body.dataset.page !== 'mobile') {
+    setupEventListeners();
+  }
   loadHistory();
   loadData();
 });
@@ -357,9 +359,10 @@ async function loadData() {
     localStorage.setItem(cacheKey, JSON.stringify({ tasks: tasks, intervals: REVIEW_INTERVALS }));
   } catch (e) {}
 
-  if (needRerender || !document.getElementById('calendarDays').children.length) {
+  if (needRerender || (document.getElementById('calendarDays') && !document.getElementById('calendarDays').children.length)) {
     renderCalendar();
   }
+  window.dispatchEvent(new CustomEvent('dataready'));
 }
 
 function updateCache() {
