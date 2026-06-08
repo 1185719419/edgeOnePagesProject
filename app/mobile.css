@@ -37,6 +37,12 @@ body {
   display:flex; align-items:center; justify-content:center; cursor:pointer;
 }
 .m-nav-icon:active { background:#f0f0f3; }
+/* 设置页返回按钮 — 跟桌面端一致 */
+#mBackBtn {
+  width:34px; height:34px; border:1px solid #e0e0e0; border-radius:50%;
+  background:#fff; color:#666;
+}
+#mBackBtn:active { background:#667eea; color:#fff; border-color:#667eea; }
 .m-nav-center { display:flex; align-items:center; gap:2px; }
 .m-nav-arrow {
   width:40px; height:40px; border:none; background:none;
