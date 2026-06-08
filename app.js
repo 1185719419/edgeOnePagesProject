@@ -1350,21 +1350,22 @@ function renderIntervalsEditor() {
   }
   var container = document.getElementById('intervalsEditor');
   var arr = REVIEW_INTERVALS.slice();
-  var canDelete = arr.length > 5;
   container.innerHTML = arr.map(function(v, i) {
     return '<div class="interval-row">' +
       '<span class="interval-label">第 ' + (i + 1) + ' 次复习</span>' +
       '<input type="number" min="1" max="365" value="' + v + '">' +
       '<span>天后</span>' +
-      '<button class="interval-del-btn' + (canDelete ? ' visible' : '') + '" title="删除">&times;</button>' +
+      '<button class="interval-del-btn' + (i >= 5 ? ' visible' : '') + '" title="删除">&times;</button>' +
       '</div>';
   }).join('');
 
   container.querySelectorAll('.interval-del-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
       var rows = container.querySelectorAll('.interval-row');
-      if (rows.length <= 5) return;
-      btn.closest('.interval-row').remove();
+      var row = btn.closest('.interval-row');
+      var idx = Array.prototype.indexOf.call(rows, row);
+      if (idx < 5) return;
+      row.remove();
       refreshIntervalLabels();
       refreshDeleteButtons();
     });
@@ -1386,7 +1387,8 @@ function addInterval() {
     '<button class="interval-del-btn visible" title="删除">&times;</button>';
   row.querySelector('.interval-del-btn').addEventListener('click', function() {
     var rows = container.querySelectorAll('.interval-row');
-    if (rows.length <= 5) return;
+    var idx = Array.prototype.indexOf.call(rows, row);
+    if (idx < 5) return;
     row.remove();
     refreshIntervalLabels();
     refreshDeleteButtons();
@@ -1403,10 +1405,9 @@ function refreshIntervalLabels() {
 
 function refreshDeleteButtons() {
   var rows = document.querySelectorAll('#intervalsEditor .interval-row');
-  var canDelete = rows.length > 5;
-  rows.forEach(function(row) {
+  rows.forEach(function(row, i) {
     var btn = row.querySelector('.interval-del-btn');
-    if (canDelete) btn.classList.add('visible');
+    if (i >= 5) btn.classList.add('visible');
     else btn.classList.remove('visible');
   });
 }

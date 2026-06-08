@@ -527,20 +527,21 @@
       REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
     }
     var c = q('mIntervals');
-    var canDelete = REVIEW_INTERVALS.length > 5;
     c.innerHTML = REVIEW_INTERVALS.map(function(v,i) {
       return '<div class="m-int-row">'+
         '<span class="m-int-label">第'+(i+1)+'次复习</span>'+
         '<input type="number" min="1" max="365" value="'+v+'">'+
         '<span>天后</span>'+
-        '<button class="m-int-x'+(canDelete?'':' hidden')+'">&times;</button>'+
+        '<button class="m-int-x'+(i>=5?'':' hidden')+'">&times;</button>'+
       '</div>';
     }).join('');
     c.querySelectorAll('.m-int-x').forEach(function(b) {
       b.addEventListener('click', function() {
         var rows = c.querySelectorAll('.m-int-row');
-        if (rows.length <= 5) return;
-        this.closest('.m-int-row').remove();
+        var row = this.closest('.m-int-row');
+        var idx = Array.prototype.indexOf.call(rows, row);
+        if (idx < 5) return;
+        row.remove();
         toggleIntervalDeleteBtns();
       });
     });
@@ -559,7 +560,9 @@
       '<button class="m-int-x">&times;</button>';
     div.querySelector('.m-int-x').addEventListener('click', function() {
       var curRows = c.querySelectorAll('.m-int-row');
-      if (curRows.length <= 5) return;
+      var row = div;
+      var idx = Array.prototype.indexOf.call(curRows, row);
+      if (idx < 5) return;
       div.remove();
       toggleIntervalDeleteBtns();
     });
@@ -569,10 +572,9 @@
 
   function toggleIntervalDeleteBtns() {
     var rows = q('mIntervals').querySelectorAll('.m-int-row');
-    var show = rows.length > 5;
-    rows.forEach(function(row) {
+    rows.forEach(function(row, i) {
       var btn = row.querySelector('.m-int-x');
-      if (show) btn.classList.remove('hidden');
+      if (i >= 5) btn.classList.remove('hidden');
       else btn.classList.add('hidden');
     });
   }
