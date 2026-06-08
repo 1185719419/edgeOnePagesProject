@@ -432,15 +432,6 @@
     });
     if (q('mSyncReviews').checked) {
       addReviewTasks(curDateKey, text, filenames);
-      var dbg = window._reviewDebug;
-      if (dbg) {
-        alert('复习调试信息:\n' +
-          '间隔数组: [' + dbg.intervals.join(', ') + ']\n' +
-          '间隔数量: ' + dbg.intervalCount + '\n' +
-          '原始日期: ' + dbg.baseDate + '\n' +
-          '生成的复习日期(' + dbg.reviewDates.length + '条):\n' +
-          dbg.reviewDates.map(function(d, i) { return '  ' + (i+1) + '. ' + d; }).join('\n'));
-      }
     }
 
     var ok = await saveTasksToServer();
