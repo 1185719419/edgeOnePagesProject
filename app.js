@@ -1345,6 +1345,9 @@ function openSettingsPage() {
 function closeSettingsPage() { document.getElementById('settingsPage').style.display = 'none'; }
 
 function renderIntervalsEditor() {
+  if (!REVIEW_INTERVALS || REVIEW_INTERVALS.length === 0) {
+    REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
+  }
   var container = document.getElementById('intervalsEditor');
   var arr = REVIEW_INTERVALS.slice();
   var canDelete = arr.length > 5;

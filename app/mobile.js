@@ -523,6 +523,9 @@
   function closeSettings() { q('mSettingsPage').style.display = 'none'; }
 
   function renderIntervals() {
+    if (!REVIEW_INTERVALS || REVIEW_INTERVALS.length === 0) {
+      REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
+    }
     var c = q('mIntervals');
     var canDelete = REVIEW_INTERVALS.length > 5;
     c.innerHTML = REVIEW_INTERVALS.map(function(v,i) {
