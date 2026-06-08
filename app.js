@@ -261,6 +261,14 @@ function setupEventListeners() {
   document.getElementById('batchDeleteYear').addEventListener('change', updateBatchDeleteInfo);
   document.getElementById('batchDeleteMonth').addEventListener('change', updateBatchDeleteInfo);
 
+  // 通用确认弹窗
+  document.getElementById('confirmDialogCancel').addEventListener('click', function() {
+    document.getElementById('confirmDialog').style.display = 'none';
+  });
+  document.getElementById('confirmDialog').addEventListener('click', function(e) {
+    if (e.target === this) document.getElementById('confirmDialog').style.display = 'none';
+  });
+
   document.getElementById('taskInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addTask(); }
   });
@@ -1177,6 +1185,33 @@ function applyDeleteAction(actionItems) {
   });
 }
 
+// ===== 通用确认弹窗 =====
+function showConfirm(title, message, onConfirm, confirmText) {
+  var isMobile = document.body.dataset.page === 'mobile';
+  var prefix = isMobile ? 'mConfirm' : 'confirmDialog';
+  if (isMobile) {
+    document.getElementById('mConfirmTitle').textContent = title;
+    document.getElementById('mConfirmBody').textContent = message;
+    var okBtn = document.getElementById('mConfirmOk');
+    okBtn.textContent = confirmText || '确认';
+    okBtn.onclick = function() {
+      document.getElementById('mConfirmDialog').style.display = 'none';
+      onConfirm();
+    };
+    document.getElementById('mConfirmDialog').style.display = 'flex';
+  } else {
+    document.getElementById('confirmDialogTitle').textContent = title;
+    document.getElementById('confirmDialogBody').textContent = message;
+    var okBtn = document.getElementById('confirmDialogOk');
+    okBtn.textContent = confirmText || '确认';
+    okBtn.onclick = function() {
+      document.getElementById('confirmDialog').style.display = 'none';
+      onConfirm();
+    };
+    document.getElementById('confirmDialog').style.display = 'flex';
+  }
+}
+
 // ===== 批量删除 =====
 function initBatchDeletePanel() {
   var yearSelect = document.getElementById('batchDeleteYear');
@@ -1224,42 +1259,43 @@ async function executeBatchDelete() {
   keysToDelete.forEach(function(key) { totalCount += (tasks[key] || []).length; });
 
   var scope = month === 0 ? year + '年全年' : year + '年' + month + '月';
-  if (!confirm('确定删除 ' + scope + ' 共 ' + totalCount + ' 条任务？此操作不可撤回。')) return;
 
-  var btn = document.getElementById('confirmBatchDelete');
-  btn.disabled = true;
-  btn.textContent = '删除中...';
-  btn.style.opacity = '0.6';
+  showConfirm('确认删除', '确定删除 ' + scope + ' 共 ' + totalCount + ' 条任务？此操作不可撤回。', async function() {
+    var btn = document.getElementById('confirmBatchDelete');
+    btn.disabled = true;
+    btn.textContent = '删除中...';
+    btn.style.opacity = '0.6';
 
-  var snapshot = JSON.parse(JSON.stringify(tasks));
+    var snapshot = JSON.parse(JSON.stringify(tasks));
 
-  keysToDelete.forEach(function(key) { delete tasks[key]; });
+    keysToDelete.forEach(function(key) { delete tasks[key]; });
 
-  var ok = await saveTasksToServer();
-  if (!ok) {
-    tasks = snapshot;
+    var ok = await saveTasksToServer();
+    if (!ok) {
+      tasks = snapshot;
+      btn.disabled = false;
+      btn.textContent = '确认删除';
+      btn.style.opacity = '';
+      alert('删除失败，请重试');
+      return;
+    }
+
+    recordHistory('batch-delete', '批量删除 ' + scope + ' ' + totalCount + '条', snapshot);
+
     btn.disabled = false;
     btn.textContent = '确认删除';
     btn.style.opacity = '';
-    alert('删除失败，请重试');
-    return;
-  }
 
-  recordHistory('batch-delete', '批量删除 ' + scope + ' ' + totalCount + '条', snapshot);
+    initBatchDeletePanel();
+    renderCalendar();
 
-  btn.disabled = false;
-  btn.textContent = '确认删除';
-  btn.style.opacity = '';
+    var modalDateEl = document.getElementById('modalDate');
+    if (modalDateEl.dataset.dateKey && modalDateEl.dataset.dateKey.indexOf(prefix) === 0) {
+      renderTaskList(modalDateEl.dataset.dateKey);
+    }
 
-  initBatchDeletePanel();
-  renderCalendar();
-
-  var modalDateEl = document.getElementById('modalDate');
-  if (modalDateEl.dataset.dateKey && modalDateEl.dataset.dateKey.indexOf(prefix) === 0) {
-    renderTaskList(modalDateEl.dataset.dateKey);
-  }
-
-  alert('已成功删除 ' + scope + ' 共 ' + totalCount + ' 条任务');
+    alert('已成功删除 ' + scope + ' 共 ' + totalCount + ' 条任务');
+  }, '确认删除');
 }
 
 // ===== 设置 =====

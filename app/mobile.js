@@ -67,6 +67,9 @@
     q('mLogoutBtn').addEventListener('click', logout);
     q('mRevertCancel').addEventListener('click', function() { q('mRevertDialog').style.display='none'; });
     q('mRevertOk').addEventListener('click', executeRevert);
+    // confirm dialog
+    q('mConfirmCancel').addEventListener('click', function() { q('mConfirmDialog').style.display='none'; });
+    q('mConfirmDialog').addEventListener('click', function(e) { if (e.target===this) q('mConfirmDialog').style.display='none'; });
     // image viewer
     q('mImgViewerClose').addEventListener('click', closeImageViewer);
     q('mImageViewer').addEventListener('click', function(e) { if (e.target===this) closeImageViewer(); });
@@ -580,14 +583,34 @@
     var keys = Object.keys(tasks).filter(function(k){return k.indexOf(prefix)===0;});
     if (keys.length===0) return;
     var total = 0; keys.forEach(function(k){ total+=(tasks[k]||[]).length; });
-    if (!confirm('确定删除'+(m===0?y+'年全年':y+'年'+m+'月')+' 共 '+total+' 条任务？')) return;
-    var snapshot = JSON.parse(JSON.stringify(tasks));
-    keys.forEach(function(k){ delete tasks[k]; });
-    var ok = await saveTasksToServer();
-    if (!ok) { tasks = snapshot; return; }
-    recordHistory('batch-delete', '批量删除 '+(m===0?y+'年全年':y+'年'+m+'月')+' '+total+'条', snapshot);
-    renderMonth();
-    renderBatchSelects();
+    var scope = m===0 ? y+'年全年' : y+'年'+m+'月';
+    showConfirm('确认删除', '确定删除 ' + scope + ' 共 ' + total + ' 条任务？此操作不可撤回。', async function() {
+      var btn = q('mBatchDelete');
+      btn.disabled = true;
+      btn.textContent = '删除中...';
+      btn.style.opacity = '0.6';
+
+      var snapshot = JSON.parse(JSON.stringify(tasks));
+      keys.forEach(function(k){ delete tasks[k]; });
+      var ok = await saveTasksToServer();
+      if (!ok) {
+        tasks = snapshot;
+        btn.disabled = false;
+        btn.textContent = '确认删除';
+        btn.style.opacity = '';
+        alert('删除失败，请重试');
+        return;
+      }
+      recordHistory('batch-delete', '批量删除 ' + scope + ' ' + total + '条', snapshot);
+
+      btn.disabled = false;
+      btn.textContent = '确认删除';
+      btn.style.opacity = '';
+
+      renderMonth();
+      renderBatchSelects();
+      alert('已成功删除 ' + scope + ' 共 ' + total + ' 条任务');
+    }, '确认删除');
   }
 
   function logout() {
