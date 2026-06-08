@@ -48,7 +48,7 @@ export default async function onRequest(context) {
     if (context.request.method === 'GET') {
       try {
         var data = await apiCall(context, 'GET', BASE + '/configs/documents/' + encodeURIComponent(userId));
-        return json({ intervals: data.intervals || [1, 3, 6, 13, 27] });
+        return json({ intervals: (data.intervals && data.intervals.length > 0) ? data.intervals : [1, 3, 6, 13, 27] });
       } catch (e) {
         return json({ intervals: [1, 3, 6, 13, 27] });
       }

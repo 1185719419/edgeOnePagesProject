@@ -356,7 +356,7 @@ async function loadData() {
 
   var needRerender = false;
 
-  if (serverConfig && serverConfig.intervals) {
+  if (serverConfig && serverConfig.intervals && serverConfig.intervals.length > 0) {
     REVIEW_INTERVALS = serverConfig.intervals;
     if (REVIEW_INTERVALS.length < DEFAULT_INTERVALS.length) {
       REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
