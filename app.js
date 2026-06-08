@@ -229,7 +229,6 @@ function setupEventListeners() {
   document.querySelector('#taskModal .close').addEventListener('click', closeModal);
   document.querySelector('#taskDetailModal .close').addEventListener('click', closeTaskDetailModal);
   document.querySelector('#editTaskModal .close').addEventListener('click', closeEditTaskModal);
-  document.querySelector('#batchDeleteModal .close').addEventListener('click', closeBatchDeleteModal);
 
   document.getElementById('settingsBtn').addEventListener('click', openSettingsPage);
   document.getElementById('settingsBackBtn').addEventListener('click', closeSettingsPage);
@@ -250,6 +249,7 @@ function setupEventListeners() {
       var panelId = item.dataset.panel;
       document.querySelectorAll('.settings-panel').forEach(function(p) { p.style.display = 'none'; });
       document.getElementById('panel-' + panelId).style.display = 'block';
+      if (panelId === 'batchDelete') initBatchDeletePanel();
     });
   });
 
@@ -257,9 +257,7 @@ function setupEventListeners() {
   document.getElementById('saveTaskEdit').addEventListener('click', saveTaskEdit);
   document.getElementById('cancelTaskEdit').addEventListener('click', closeEditTaskModal);
 
-  document.getElementById('batchDeleteBtn').addEventListener('click', openBatchDeleteModal);
   document.getElementById('confirmBatchDelete').addEventListener('click', executeBatchDelete);
-  document.getElementById('cancelBatchDelete').addEventListener('click', closeBatchDeleteModal);
   document.getElementById('batchDeleteYear').addEventListener('change', updateBatchDeleteInfo);
   document.getElementById('batchDeleteMonth').addEventListener('change', updateBatchDeleteInfo);
 
@@ -314,7 +312,6 @@ function setupEventListeners() {
     if (e.target === document.getElementById('taskModal')) closeModal();
     if (e.target === document.getElementById('taskDetailModal')) closeTaskDetailModal();
     if (e.target === document.getElementById('editTaskModal')) closeEditTaskModal();
-    if (e.target === document.getElementById('batchDeleteModal')) closeBatchDeleteModal();
   });
 }
 
@@ -1181,7 +1178,7 @@ function applyDeleteAction(actionItems) {
 }
 
 // ===== 批量删除 =====
-function openBatchDeleteModal() {
+function initBatchDeletePanel() {
   var yearSelect = document.getElementById('batchDeleteYear');
   var monthSelect = document.getElementById('batchDeleteMonth');
   var monthNames = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
@@ -1201,10 +1198,7 @@ function openBatchDeleteModal() {
   if (sortedYears.indexOf(currentYear) !== -1) yearSelect.value = currentYear;
 
   updateBatchDeleteInfo();
-  document.getElementById('batchDeleteModal').style.display = 'block';
 }
-
-function closeBatchDeleteModal() { document.getElementById('batchDeleteModal').style.display = 'none'; }
 
 function updateBatchDeleteInfo() {
   var year = parseInt(document.getElementById('batchDeleteYear').value);
