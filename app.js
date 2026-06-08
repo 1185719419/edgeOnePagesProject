@@ -1195,14 +1195,14 @@ function showToast(message, duration) {
   style.top = '20px';
   style.left = '50%';
   style.transform = 'translateX(-50%)';
-  style.background = '#2e7d32';
+  style.background = '#4f6ef6';
   style.color = '#fff';
   style.padding = '12px 28px';
   style.borderRadius = '8px';
   style.fontSize = '0.95em';
   style.fontWeight = '500';
   style.zIndex = '99999';
-  style.boxShadow = '0 4px 16px rgba(46,125,50,0.35)';
+  style.boxShadow = '0 4px 16px rgba(79,110,246,0.35)';
   style.opacity = '0';
   style.transition = 'opacity 0.3s ease, transform 0.3s ease';
   style.pointerEvents = 'none';
