@@ -1185,6 +1185,39 @@ function applyDeleteAction(actionItems) {
   });
 }
 
+// ===== Toast 通知 =====
+function showToast(message, duration) {
+  duration = duration || 2500;
+  var toast = document.createElement('div');
+  toast.textContent = message;
+  var style = toast.style;
+  style.position = 'fixed';
+  style.top = '20px';
+  style.left = '50%';
+  style.transform = 'translateX(-50%)';
+  style.background = '#2e7d32';
+  style.color = '#fff';
+  style.padding = '12px 28px';
+  style.borderRadius = '8px';
+  style.fontSize = '0.95em';
+  style.fontWeight = '500';
+  style.zIndex = '99999';
+  style.boxShadow = '0 4px 16px rgba(46,125,50,0.35)';
+  style.opacity = '0';
+  style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+  style.pointerEvents = 'none';
+  document.body.appendChild(toast);
+  requestAnimationFrame(function() {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(-10px)';
+    setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+  }, duration);
+}
+
 // ===== 通用确认弹窗 =====
 function showConfirm(title, message, onConfirm, confirmText) {
   var isMobile = document.body.dataset.page === 'mobile';
@@ -1288,12 +1321,7 @@ async function executeBatchDelete() {
 
     initBatchDeletePanel();
     renderCalendar();
-
-    // 绿色成功提示
-    var infoEl = document.getElementById('batchDeleteInfo');
-    infoEl.textContent = '已成功删除 ' + scope + ' 共 ' + totalCount + ' 条任务';
-    infoEl.style.color = '#2e7d32';
-    setTimeout(function() { infoEl.style.color = ''; initBatchDeletePanel(); }, 3000);
+    showToast('已成功删除 ' + scope + ' 共 ' + totalCount + ' 条任务');
 
     var modalDateEl = document.getElementById('modalDate');
     if (modalDateEl.dataset.dateKey && modalDateEl.dataset.dateKey.indexOf(prefix) === 0) {

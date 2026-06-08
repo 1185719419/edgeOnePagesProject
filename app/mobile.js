@@ -610,11 +610,7 @@
 
       renderMonth();
       renderBatchSelects();
-
-      var msgEl = q('mBatchMsg');
-      msgEl.textContent = '已成功删除 ' + scope + ' 共 ' + total + ' 条任务';
-      msgEl.style.cssText = 'display:block;color:#2e7d32;margin-top:8px;';
-      setTimeout(function() { msgEl.style.display = 'none'; }, 3000);
+      showToast('已成功删除 ' + scope + ' 共 ' + total + ' 条任务');
     }, '确认删除');
   }
 
