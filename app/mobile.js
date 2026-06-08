@@ -598,6 +598,7 @@
     var mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
     q('mBatchYear').innerHTML = sy.map(function(y){return'<option value="'+y+'">'+y+'年</option>';}).join('');
     q('mBatchMonth').innerHTML = '<option value="0">全部月份</option>'+mn.map(function(n,i){return'<option value="'+(i+1)+'">'+n+'</option>';}).join('');
+    q('mBatchMonth').value = new Date().getMonth() + 1;
   }
 
   async function batchDelete() {
