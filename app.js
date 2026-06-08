@@ -1037,14 +1037,19 @@ function addReviewTasks(originalDateKey, taskText, images) {
   var parts = originalDateKey.split('-');
   var originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
 
-  var count = 0;
-  console.log('[addReviewTasks] intervals:', REVIEW_INTERVALS, 'count:', REVIEW_INTERVALS.length, 'baseDate:', originalDateKey);
+  window._reviewDebug = {
+    intervals: REVIEW_INTERVALS.slice(),
+    intervalCount: REVIEW_INTERVALS.length,
+    baseDate: originalDateKey,
+    reviewDates: []
+  };
 
   REVIEW_INTERVALS.forEach(function(interval) {
-    count++;
     var reviewDate = new Date(originalDate);
     reviewDate.setDate(reviewDate.getDate() + interval);
     var reviewDateKey = reviewDate.getFullYear() + '-' + pad(reviewDate.getMonth() + 1) + '-' + pad(reviewDate.getDate());
+
+    window._reviewDebug.reviewDates.push(reviewDateKey);
 
     if (!tasks[reviewDateKey]) tasks[reviewDateKey] = [];
 
