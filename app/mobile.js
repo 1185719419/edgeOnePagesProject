@@ -556,6 +556,7 @@
     var arr = [];
     inputs.forEach(function(inp) { var v=parseInt(inp.value)||1; arr.push(Math.max(1,Math.min(365,v))); });
     arr.sort(function(a,b) { return a-b; });
+    if (arr.length < DEFAULT_INTERVALS.length) arr = DEFAULT_INTERVALS.slice();
     var old = REVIEW_INTERVALS;
     REVIEW_INTERVALS = arr;
     var ok = await saveConfigToServer(arr);

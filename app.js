@@ -408,6 +408,10 @@ async function saveTasksToServer() {
 }
 
 async function saveConfigToServer(arr) {
+  if (!arr || arr.length < DEFAULT_INTERVALS.length) {
+    arr = DEFAULT_INTERVALS.slice();
+    REVIEW_INTERVALS = arr;
+  }
   var userId = getUserId();
   try {
     var res = await fetch('/api/config?userId=' + encodeURIComponent(userId), {
@@ -1032,6 +1036,8 @@ function addReviewTasks(originalDateKey, taskText, images) {
   var parts = originalDateKey.split('-');
   var originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
 
+  console.log('[addReviewTasks] intervals:', REVIEW_INTERVALS, 'count:', REVIEW_INTERVALS.length, 'baseDate:', originalDateKey);
+
   REVIEW_INTERVALS.forEach(function(interval) {
     var reviewDate = new Date(originalDate);
     reviewDate.setDate(reviewDate.getDate() + interval);
@@ -1329,6 +1335,7 @@ async function saveSettings() {
     arr.push(Math.max(1, Math.min(365, v)));
   });
   arr.sort(function(a, b) { return a - b; });
+  if (arr.length < DEFAULT_INTERVALS.length) arr = DEFAULT_INTERVALS.slice();
   var oldIntervals = REVIEW_INTERVALS;
   REVIEW_INTERVALS = arr;
   var ok = await saveConfigToServer(arr);
