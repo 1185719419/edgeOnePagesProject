@@ -1289,12 +1289,16 @@ async function executeBatchDelete() {
     initBatchDeletePanel();
     renderCalendar();
 
+    // 绿色成功提示
+    var infoEl = document.getElementById('batchDeleteInfo');
+    infoEl.textContent = '已成功删除 ' + scope + ' 共 ' + totalCount + ' 条任务';
+    infoEl.style.color = '#2e7d32';
+    setTimeout(function() { infoEl.style.color = ''; initBatchDeletePanel(); }, 3000);
+
     var modalDateEl = document.getElementById('modalDate');
     if (modalDateEl.dataset.dateKey && modalDateEl.dataset.dateKey.indexOf(prefix) === 0) {
       renderTaskList(modalDateEl.dataset.dateKey);
     }
-
-    alert('已成功删除 ' + scope + ' 共 ' + totalCount + ' 条任务');
   }, '确认删除');
 }
 

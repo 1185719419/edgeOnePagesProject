@@ -442,6 +442,7 @@
     recordHistory('add', '添加任务: '+(text||'(图片)').slice(0,20), snapshot);
     closeSheet();
     renderMonth();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function doEdit(text) {
@@ -609,7 +610,11 @@
 
       renderMonth();
       renderBatchSelects();
-      alert('已成功删除 ' + scope + ' 共 ' + total + ' 条任务');
+
+      var msgEl = q('mBatchMsg');
+      msgEl.textContent = '已成功删除 ' + scope + ' 共 ' + total + ' 条任务';
+      msgEl.style.cssText = 'display:block;color:#2e7d32;margin-top:8px;';
+      setTimeout(function() { msgEl.style.display = 'none'; }, 3000);
     }, '确认删除');
   }
 
