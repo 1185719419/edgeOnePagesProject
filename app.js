@@ -1218,28 +1218,48 @@ async function executeBatchDelete() {
   var prefix = month === 0 ? year + '-' : year + '-' + pad(month) + '-';
 
   var keysToDelete = Object.keys(tasks).filter(function(key) { return key.indexOf(prefix) === 0; });
-  if (keysToDelete.length === 0) { closeBatchDeleteModal(); return; }
+  if (keysToDelete.length === 0) return;
 
   var totalCount = 0;
   keysToDelete.forEach(function(key) { totalCount += (tasks[key] || []).length; });
+
+  var scope = month === 0 ? year + '年全年' : year + '年' + month + '月';
+  if (!confirm('确定删除 ' + scope + ' 共 ' + totalCount + ' 条任务？此操作不可撤回。')) return;
+
+  var btn = document.getElementById('confirmBatchDelete');
+  btn.disabled = true;
+  btn.textContent = '删除中...';
+  btn.style.opacity = '0.6';
 
   var snapshot = JSON.parse(JSON.stringify(tasks));
 
   keysToDelete.forEach(function(key) { delete tasks[key]; });
 
   var ok = await saveTasksToServer();
-  if (!ok) { tasks = snapshot; return; }
+  if (!ok) {
+    tasks = snapshot;
+    btn.disabled = false;
+    btn.textContent = '确认删除';
+    btn.style.opacity = '';
+    alert('删除失败，请重试');
+    return;
+  }
 
-  var scope = month === 0 ? year + '年全年' : year + '年' + month + '月';
   recordHistory('batch-delete', '批量删除 ' + scope + ' ' + totalCount + '条', snapshot);
 
-  closeBatchDeleteModal();
+  btn.disabled = false;
+  btn.textContent = '确认删除';
+  btn.style.opacity = '';
+
+  initBatchDeletePanel();
   renderCalendar();
 
   var modalDateEl = document.getElementById('modalDate');
   if (modalDateEl.dataset.dateKey && modalDateEl.dataset.dateKey.indexOf(prefix) === 0) {
     renderTaskList(modalDateEl.dataset.dateKey);
   }
+
+  alert('已成功删除 ' + scope + ' 共 ' + totalCount + ' 条任务');
 }
 
 // ===== 设置 =====
