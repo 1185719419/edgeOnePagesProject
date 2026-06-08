@@ -64,6 +64,8 @@
       REVIEW_INTERVALS = DEFAULT_INTERVALS.slice(); renderIntervals();
     });
     q('mBatchDelete').addEventListener('click', batchDelete);
+    q('mBatchYear').addEventListener('change', updateMobileBatchInfo);
+    q('mBatchMonth').addEventListener('change', updateMobileBatchInfo);
     q('mLogoutBtn').addEventListener('click', logout);
     q('mRevertCancel').addEventListener('click', function() { q('mRevertDialog').style.display='none'; });
     q('mRevertOk').addEventListener('click', executeRevert);
@@ -613,10 +615,23 @@
     Object.keys(tasks).forEach(function(k) { years[parseInt(k.split('-')[0])]=true; });
     var sy = Object.keys(years).map(Number).sort(function(a,b){return b-a;});
     if (sy.length===0) sy=[new Date().getFullYear()];
+    var nowY = new Date().getFullYear();
+    var nowM = new Date().getMonth() + 1;
     var mn=['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
     q('mBatchYear').innerHTML = sy.map(function(y){return'<option value="'+y+'">'+y+'年</option>';}).join('');
     q('mBatchMonth').innerHTML = '<option value="0">全部月份</option>'+mn.map(function(n,i){return'<option value="'+(i+1)+'">'+n+'</option>';}).join('');
-    q('mBatchMonth').value = new Date().getMonth() + 1;
+    q('mBatchMonth').value = nowM;
+    if (sy.indexOf(nowY) !== -1) q('mBatchYear').value = nowY;
+    updateMobileBatchInfo();
+  }
+
+  function updateMobileBatchInfo() {
+    var y = parseInt(q('mBatchYear').value), m = parseInt(q('mBatchMonth').value);
+    var prefix = m===0 ? y+'-' : y+'-'+pad(m)+'-';
+    var count = 0;
+    Object.keys(tasks).forEach(function(k) { if (k.indexOf(prefix)===0) count += tasks[k].length; });
+    var scope = m===0 ? y+'年全年' : y+'年'+m+'月';
+    q('mBatchInfo').textContent = count>0 ? scope+'共有 '+count+' 条任务将被删除' : scope+'没有任务';
   }
 
   async function batchDelete() {

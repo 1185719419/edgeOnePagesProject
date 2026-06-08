@@ -97,11 +97,18 @@
         <button id="mSaveSettings" class="m-btn-main">保存设置</button>
       </div>
       <div id="mPanel-batchDelete" class="m-card" style="display:none;">
-        <h4>批量删除</h4>
-        <div class="m-row">
-          <select id="mBatchYear" class="m-select"></select>
-          <select id="mBatchMonth" class="m-select"></select>
+        <h4>批量删除 <span class="m-hint">删除指定年月下的所有任务（含关联的复习任务），不可撤回</span></h4>
+        <div class="m-batch-selectors">
+          <div class="m-batch-group">
+            <label>年份</label>
+            <select id="mBatchYear" class="m-select"></select>
+          </div>
+          <div class="m-batch-group">
+            <label>月份</label>
+            <select id="mBatchMonth" class="m-select"></select>
+          </div>
         </div>
+        <div class="m-batch-info" id="mBatchInfo"></div>
         <button id="mBatchDelete" class="m-btn-del-outline">确认删除</button>
         <span id="mBatchMsg" style="display:none;font-size:0.9em;"></span>
       </div>

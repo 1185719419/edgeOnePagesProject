@@ -258,6 +258,13 @@ body {
   -webkit-appearance:none; appearance:none;
 }
 .m-select:focus { border-color:var(--c-accent); background:#fff; }
+
+/* Batch delete */
+.m-batch-selectors { display:flex; gap:12px; margin-bottom:12px; }
+.m-batch-group { flex:1; display:flex; flex-direction:column; gap:6px; }
+.m-batch-group label { font-weight:600; color:#333; font-size:0.9em; }
+.m-batch-group .m-select { width:100%; }
+.m-batch-info { font-size:0.9em; color:#666; margin-bottom:12px; min-height:20px; }
 .m-account { font-size:0.92em; color:var(--c-sub); margin-bottom:8px; }
 
 /* Intervals */
