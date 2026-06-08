@@ -1423,8 +1423,24 @@ async function saveSettings() {
   if (arr.length < DEFAULT_INTERVALS.length) arr = DEFAULT_INTERVALS.slice();
   var oldIntervals = REVIEW_INTERVALS;
   REVIEW_INTERVALS = arr;
+
+  var btn = document.getElementById('settingsSave');
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+  btn.style.opacity = '0.6';
+
   var ok = await saveConfigToServer(arr);
-  if (!ok) { REVIEW_INTERVALS = oldIntervals; return; }
+  if (!ok) {
+    REVIEW_INTERVALS = oldIntervals;
+    btn.disabled = false;
+    btn.textContent = '保存设置';
+    btn.style.opacity = '1';
+    return;
+  }
+  btn.disabled = false;
+  btn.textContent = '保存设置';
+  btn.style.opacity = '1';
+  showToast('设置成功');
 }
 
 function resetSettings() {

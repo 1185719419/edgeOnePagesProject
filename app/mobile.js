@@ -587,9 +587,25 @@
     if (arr.length < DEFAULT_INTERVALS.length) arr = DEFAULT_INTERVALS.slice();
     var old = REVIEW_INTERVALS;
     REVIEW_INTERVALS = arr;
+
+    var btn = q('mSaveSettings');
+    btn.disabled = true;
+    btn.textContent = '保存中...';
+    btn.style.opacity = '0.6';
+
     var ok = await saveConfigToServer(arr);
-    if (!ok) { REVIEW_INTERVALS = old; return; }
+    if (!ok) {
+      REVIEW_INTERVALS = old;
+      btn.disabled = false;
+      btn.textContent = '保存设置';
+      btn.style.opacity = '1';
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = '保存设置';
+    btn.style.opacity = '1';
     renderIntervals();
+    showToast('设置成功');
   }
 
   function renderBatchSelects() {
