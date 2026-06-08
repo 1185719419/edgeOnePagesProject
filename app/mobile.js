@@ -104,7 +104,7 @@
       hasAny = true;
       var isToday = dk===todayKey;
       var label = (currentMonth+1)+'月'+d+'日'+getDayOfWeek(currentYear,currentMonth,d)+(isToday?' · 今天':'')+' · '+arr.length+'项';
-      html += '<div class="m-day-card">'+
+      html += '<div class="m-day-card'+(isToday?' m-day-today':'')+'">'+
         '<div class="m-day-head" data-dk="'+dk+'">'+
           '<span class="m-day-label">'+label+'</span>'+
           '<span class="m-day-badge">'+arr.length+'</span>'+
