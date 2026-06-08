@@ -170,9 +170,11 @@
           var data = await res.json();
 
           if (res.ok && data.success) {
-            // 成功直接跳转，不做任何多余提示
+            // 登录成功，跳回原始页面（如有 redirect 参数），否则去桌面端
             localStorage.setItem('user', JSON.stringify(data.user));
-            window.location.href = '/main.html';
+            var params = new URLSearchParams(window.location.search);
+            var redirect = params.get('redirect');
+            window.location.href = redirect ? decodeURIComponent(redirect) : '/main.html';
           } else {
             setLoading(loginBtn, false);
             showMessage('message', data.error || '登录失败', 'error');

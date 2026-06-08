@@ -21,7 +21,8 @@ function checkAuth() {
       return true;
     }
   } catch (e) {}
-  window.location.href = '/login.html';
+  var redirect = encodeURIComponent(window.location.pathname + window.location.search);
+  window.location.href = '/login.html?redirect=' + redirect;
   return false;
 }
 
@@ -1036,9 +1037,11 @@ function addReviewTasks(originalDateKey, taskText, images) {
   var parts = originalDateKey.split('-');
   var originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
 
+  var count = 0;
   console.log('[addReviewTasks] intervals:', REVIEW_INTERVALS, 'count:', REVIEW_INTERVALS.length, 'baseDate:', originalDateKey);
 
   REVIEW_INTERVALS.forEach(function(interval) {
+    count++;
     var reviewDate = new Date(originalDate);
     reviewDate.setDate(reviewDate.getDate() + interval);
     var reviewDateKey = reviewDate.getFullYear() + '-' + pad(reviewDate.getMonth() + 1) + '-' + pad(reviewDate.getDate());
