@@ -523,7 +523,7 @@
   function closeSettings() { q('mSettingsPage').style.display = 'none'; }
 
   function renderIntervals() {
-    if (!REVIEW_INTERVALS || REVIEW_INTERVALS.length === 0) {
+    if (!Array.isArray(REVIEW_INTERVALS) || REVIEW_INTERVALS.length === 0) {
       REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
     }
     var c = q('mIntervals');

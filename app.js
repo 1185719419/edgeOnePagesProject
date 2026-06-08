@@ -334,7 +334,7 @@ async function loadData() {
     if (cached && cached.tasks) {
       tasks = cached.tasks;
       REVIEW_INTERVALS = cached.intervals || DEFAULT_INTERVALS.slice();
-      if (REVIEW_INTERVALS.length < DEFAULT_INTERVALS.length) {
+      if (!Array.isArray(REVIEW_INTERVALS) || REVIEW_INTERVALS.length < DEFAULT_INTERVALS.length) {
         REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
       }
       if (document.body.dataset.page !== 'mobile') renderCalendar();
@@ -356,13 +356,13 @@ async function loadData() {
 
   var needRerender = false;
 
-  if (serverConfig && serverConfig.intervals && serverConfig.intervals.length > 0) {
+  if (serverConfig && Array.isArray(serverConfig.intervals) && serverConfig.intervals.length > 0) {
     REVIEW_INTERVALS = serverConfig.intervals;
-    if (REVIEW_INTERVALS.length < DEFAULT_INTERVALS.length) {
+    if (!Array.isArray(REVIEW_INTERVALS) || REVIEW_INTERVALS.length < DEFAULT_INTERVALS.length) {
       REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
     }
     needRerender = true;
-  } else if (!REVIEW_INTERVALS || REVIEW_INTERVALS.length === 0) {
+  } else if (!Array.isArray(REVIEW_INTERVALS) || REVIEW_INTERVALS.length === 0) {
     REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
   }
 
@@ -1345,7 +1345,7 @@ function openSettingsPage() {
 function closeSettingsPage() { document.getElementById('settingsPage').style.display = 'none'; }
 
 function renderIntervalsEditor() {
-  if (!REVIEW_INTERVALS || REVIEW_INTERVALS.length === 0) {
+  if (!Array.isArray(REVIEW_INTERVALS) || REVIEW_INTERVALS.length === 0) {
     REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
   }
   var container = document.getElementById('intervalsEditor');

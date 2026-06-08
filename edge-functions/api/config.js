@@ -48,7 +48,18 @@ export default async function onRequest(context) {
     if (context.request.method === 'GET') {
       try {
         var data = await apiCall(context, 'GET', BASE + '/configs/documents/' + encodeURIComponent(userId));
-        return json({ intervals: (data.intervals && data.intervals.length > 0) ? data.intervals : [1, 3, 6, 13, 27] });
+        var intervals = (data && data.intervals) ? data.intervals : null;
+        if (!intervals && data && data.data && data.data.intervals) {
+          intervals = data.data.intervals;
+        }
+        var valid = intervals && intervals.length >= 5;
+        if (valid) {
+          for (var i = 0; i < intervals.length; i++) {
+            var v = intervals[i];
+            if (typeof v !== 'number' || v < 1 || v > 365) { valid = false; break; }
+          }
+        }
+        return json({ intervals: valid ? intervals : [1, 3, 6, 13, 27] });
       } catch (e) {
         return json({ intervals: [1, 3, 6, 13, 27] });
       }
