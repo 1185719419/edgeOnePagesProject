@@ -69,8 +69,13 @@
       <button id="mBackBtn" class="m-nav-icon">&#8592;</button>
       <h3>设置</h3>
     </div>
+    <div class="m-settings-tabs">
+      <button class="m-tab active" data-panel="intervals">复习间隔</button>
+      <button class="m-tab" data-panel="batchDelete">批量删除</button>
+      <button class="m-tab" data-panel="account">账号</button>
+    </div>
     <div class="m-page-body">
-      <div class="m-card">
+      <div id="mPanel-intervals" class="m-card">
         <h4>复习间隔 <span class="m-hint">任务创建后在第N天生成复习任务</span></h4>
         <div id="mIntervals"></div>
         <div class="m-card-actions">
@@ -79,7 +84,7 @@
         </div>
         <button id="mSaveSettings" class="m-btn-main">保存设置</button>
       </div>
-      <div class="m-card">
+      <div id="mPanel-batchDelete" class="m-card" style="display:none;">
         <h4>批量删除</h4>
         <div class="m-row">
           <select id="mBatchYear" class="m-select"></select>
@@ -88,7 +93,7 @@
         <button id="mBatchDelete" class="m-btn-del">确认删除</button>
         <span id="mBatchMsg" style="display:none;font-size:0.9em;"></span>
       </div>
-      <div class="m-card">
+      <div id="mPanel-account" class="m-card" style="display:none;">
         <h4>账号</h4>
         <p class="m-account" id="mAccountName"></p>
         <button id="mLogoutBtn" class="m-btn-del-outline">退出登录</button>

@@ -70,6 +70,18 @@
     // confirm dialog
     q('mConfirmCancel').addEventListener('click', function() { q('mConfirmDialog').style.display='none'; });
     q('mConfirmDialog').addEventListener('click', function(e) { if (e.target===this) q('mConfirmDialog').style.display='none'; });
+    // settings tabs
+    document.querySelectorAll('.m-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.m-tab').forEach(function(t) { t.classList.remove('active'); });
+        this.classList.add('active');
+        var panel = this.dataset.panel;
+        q('mPanel-intervals').style.display = panel === 'intervals' ? '' : 'none';
+        q('mPanel-batchDelete').style.display = panel === 'batchDelete' ? '' : 'none';
+        q('mPanel-account').style.display = panel === 'account' ? '' : 'none';
+        if (panel === 'batchDelete') renderBatchSelects();
+      });
+    });
     // image viewer
     q('mImgViewerClose').addEventListener('click', closeImageViewer);
     q('mImageViewer').addEventListener('click', function(e) { if (e.target===this) closeImageViewer(); });
@@ -499,6 +511,13 @@
     q('mAccountName').textContent = currentUser ? currentUser.username : '';
     renderIntervals();
     renderBatchSelects();
+    // reset tabs to default
+    document.querySelectorAll('.m-tab').forEach(function(t) { t.classList.remove('active'); });
+    var defaultTab = document.querySelector('.m-tab[data-panel="intervals"]');
+    if (defaultTab) defaultTab.classList.add('active');
+    q('mPanel-intervals').style.display = '';
+    q('mPanel-batchDelete').style.display = 'none';
+    q('mPanel-account').style.display = 'none';
     q('mSettingsPage').style.display = 'flex';
   }
   function closeSettings() { q('mSettingsPage').style.display = 'none'; }
