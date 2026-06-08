@@ -328,6 +328,9 @@ async function loadData() {
     if (cached && cached.tasks) {
       tasks = cached.tasks;
       REVIEW_INTERVALS = cached.intervals || DEFAULT_INTERVALS.slice();
+      if (REVIEW_INTERVALS.length < DEFAULT_INTERVALS.length) {
+        REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
+      }
       if (document.body.dataset.page !== 'mobile') renderCalendar();
     }
   } catch (e) {}
@@ -349,6 +352,9 @@ async function loadData() {
 
   if (serverConfig && serverConfig.intervals) {
     REVIEW_INTERVALS = serverConfig.intervals;
+    if (REVIEW_INTERVALS.length < DEFAULT_INTERVALS.length) {
+      REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
+    }
     needRerender = true;
   } else if (!REVIEW_INTERVALS || REVIEW_INTERVALS.length === 0) {
     REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();

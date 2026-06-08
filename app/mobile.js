@@ -222,10 +222,10 @@
   function setDateSelects(dk) {
     var parts = dk.split('-');
     var y = parseInt(parts[0]), m = parseInt(parts[1]), d = parseInt(parts[2]);
-    // year options: -2 to +2 from current year
     var thisYear = new Date().getFullYear();
+    var minY = Math.min(thisYear - 2, y), maxY = Math.max(thisYear + 2, y);
     var yHtml = '';
-    for (var yi = thisYear - 2; yi <= thisYear + 2; yi++) {
+    for (var yi = minY; yi <= maxY; yi++) {
       yHtml += '<option value="'+yi+'"'+(yi===y?' selected':'')+'>'+yi+'年</option>';
     }
     q('mSheetYear').innerHTML = yHtml;
@@ -237,13 +237,20 @@
     q('mSheetMonth').innerHTML = mHtml;
     // day - depends on year/month
     renderDaySelect(y, m, d);
-    // bind change to re-render days
-    q('mSheetYear').onchange = function() { renderDaySelect(parseInt(this.value), parseInt(q('mSheetMonth').value), null); };
-    q('mSheetMonth').onchange = function() { renderDaySelect(parseInt(q('mSheetYear').value), parseInt(this.value), null); };
+    // bind change to re-render days, preserving selected day
+    q('mSheetYear').onchange = function() {
+      var curDay = parseInt(q('mSheetDay').value) || 1;
+      renderDaySelect(parseInt(this.value), parseInt(q('mSheetMonth').value), curDay);
+    };
+    q('mSheetMonth').onchange = function() {
+      var curDay = parseInt(q('mSheetDay').value) || 1;
+      renderDaySelect(parseInt(q('mSheetYear').value), parseInt(this.value), curDay);
+    };
   }
 
   function renderDaySelect(y, m, selDay) {
     var dim = new Date(y, m, 0).getDate();
+    if (selDay && selDay > dim) selDay = dim;
     var dHtml = '';
     for (var di = 1; di <= dim; di++) {
       dHtml += '<option value="'+di+'"'+(selDay===di?' selected':'')+'>'+di+'日</option>';

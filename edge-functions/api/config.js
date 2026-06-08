@@ -60,7 +60,7 @@ export default async function onRequest(context) {
       try { await apiCall(context, 'DELETE', BASE + '/configs/documents/' + encodeURIComponent(userId)); } catch (e) {}
 
       await apiCall(context, 'POST', BASE + '/configs/documents', {
-        data: [{ _id: userId, userId: userId, intervals: body.intervals || [1, 3, 6, 13, 27], updated_at: Date.now() }],
+        data: [{ _id: userId, userId: userId, intervals: (body.intervals && body.intervals.length >= 5) ? body.intervals : [1, 3, 6, 13, 27], updated_at: Date.now() }],
       });
 
       return json({ ok: true });
