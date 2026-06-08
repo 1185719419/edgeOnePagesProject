@@ -10,13 +10,23 @@
   <div id="mApp" class="m-app">
     <!-- 顶部导航栏 -->
     <nav class="m-nav">
-      <button id="mHistoryBtn" class="m-nav-icon">&#128338;</button>
+      <button id="mHistoryBtn" class="m-nav-icon" title="操作历史">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </button>
       <div class="m-nav-center">
         <button id="mPrevMonth" class="m-nav-arrow">&lsaquo;</button>
         <span id="mCurrentMonth" class="m-nav-title"></span>
         <button id="mNextMonth" class="m-nav-arrow">&rsaquo;</button>
       </div>
-      <button id="mSettingsBtn" class="m-nav-icon">&#9881;</button>
+      <button id="mSettingsBtn" class="m-nav-icon" title="设置">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
     </nav>
 
     <!-- 日期列表 -->
