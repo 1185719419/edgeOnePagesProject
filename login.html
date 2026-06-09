@@ -3,134 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>登录 - EdgeOne Pages</title>
+  <title>登录 - 记忆曲线任务日历</title>
   <link rel="stylesheet" href="/style.css">
+  <style>
+    .sms-row { display:flex; gap:10px; }
+    .sms-row input { flex:1; }
+    .sms-btn {
+      white-space:nowrap; padding:10px 16px; border:1px solid #667eea; border-radius:6px;
+      background:#fff; color:#667eea; font-size:0.9em; font-weight:600; cursor:pointer; transition:all .15s;
+    }
+    .sms-btn:disabled { color:#ccc; border-color:#ccc; cursor:not-allowed; }
+    .sms-btn:hover:not(:disabled) { background:#667eea; color:#fff; }
+    .login-phone-hint { font-size:0.85em; color:#8b949e; margin-bottom:16px; }
+  </style>
 </head>
 <body>
   <div class="login-container">
     <div class="login-card" id="loginCard">
       <div class="login-header">
-        <h1>账号登录</h1>
+        <h1>手机登录</h1>
         <p class="login-subtitle">基于艾宾浩斯记忆曲线的任务管理日历</p>
       </div>
 
       <form id="loginForm" class="login-form">
         <div class="form-group">
-          <label for="username">账号</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            placeholder="请输入账号"
-            autocomplete="username"
-            required
-          >
+          <label for="phone">手机号</label>
+          <input type="tel" id="phone" name="phone" placeholder="请输入手机号" autocomplete="tel" maxlength="11" required>
         </div>
 
         <div class="form-group">
-          <label for="password">密码</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="请输入密码"
-            autocomplete="current-password"
-            required
-          >
+          <label>验证码</label>
+          <div class="sms-row">
+            <input type="text" id="code" name="code" placeholder="请输入验证码" autocomplete="one-time-code" maxlength="6" inputmode="numeric" required>
+            <button type="button" id="sendSmsBtn" class="sms-btn">发送验证码</button>
+          </div>
         </div>
 
         <div id="message" class="message hidden"></div>
 
         <button type="submit" id="submitBtn" class="login-btn">登 录</button>
       </form>
-
-      <div class="login-footer">
-        <span>还没有账号？</span>
-        <a href="#" id="showRegister">立即注册</a>
-      </div>
-    </div>
-
-    <!-- 注册卡片（默认隐藏） -->
-    <div class="login-card hidden" id="registerCard">
-      <div class="login-header">
-        <h1>账号注册</h1>
-        <p class="login-subtitle">创建新账号</p>
-      </div>
-
-      <form id="registerForm" class="login-form">
-        <div class="form-group">
-          <label for="regUsername">账号</label>
-          <input
-            type="text"
-            id="regUsername"
-            name="username"
-            placeholder="请输入账号"
-            autocomplete="off"
-            required
-          >
-        </div>
-
-        <div class="form-group">
-          <label for="regPassword">密码</label>
-          <input
-            type="password"
-            id="regPassword"
-            name="password"
-            placeholder="请输入密码（至少6位）"
-            autocomplete="new-password"
-            required
-            minlength="6"
-          >
-        </div>
-
-        <div class="form-group">
-          <label for="regPasswordConfirm">确认密码</label>
-          <input
-            type="password"
-            id="regPasswordConfirm"
-            name="passwordConfirm"
-            placeholder="请再次输入密码"
-            autocomplete="new-password"
-            required
-            minlength="6"
-          >
-        </div>
-
-        <div id="regMessage" class="message hidden"></div>
-
-        <button type="submit" id="regSubmitBtn" class="login-btn">注 册</button>
-      </form>
-
-      <div class="login-footer">
-        <span>已有账号？</span>
-        <a href="#" id="showLogin">返回登录</a>
-      </div>
     </div>
   </div>
 
   <script>
-    // 切换登录/注册卡片
-    document.getElementById('showRegister').addEventListener('click', function(e) {
-      e.preventDefault();
-      document.getElementById('loginCard').classList.add('hidden');
-      document.getElementById('registerCard').classList.remove('hidden');
-      clearMessages();
-    });
+    var countdown = 0;
+    var timer = null;
 
-    document.getElementById('showLogin').addEventListener('click', function(e) {
-      e.preventDefault();
-      document.getElementById('registerCard').classList.add('hidden');
-      document.getElementById('loginCard').classList.remove('hidden');
-      clearMessages();
-    });
-
-    function clearMessages() {
-      document.getElementById('message').classList.add('hidden');
-      document.getElementById('regMessage').classList.add('hidden');
-    }
-
-    function showMessage(elementId, text, type) {
-      var el = document.getElementById(elementId);
+    function showMessage(text, type) {
+      var el = document.getElementById('message');
       el.textContent = text;
       el.className = 'message ' + type;
     }
@@ -138,9 +59,53 @@
     function setLoading(btn, loading) {
       btn.disabled = loading;
       btn.textContent = loading ? '处理中...' : (btn.dataset.defaultText || btn.textContent);
-      if (!loading && btn.dataset.defaultText) {
-        btn.textContent = btn.dataset.defaultText;
+      if (!loading && btn.dataset.defaultText) btn.textContent = btn.dataset.defaultText;
+    }
+
+    // 发送验证码
+    document.getElementById('sendSmsBtn').addEventListener('click', async function() {
+      var phone = document.getElementById('phone').value.trim();
+      if (!phone) { showMessage('请输入手机号', 'error'); return; }
+      if (!/^1[3-9]\d{9}$/.test(phone)) { showMessage('手机号格式不正确', 'error'); return; }
+
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = '发送中...';
+      showMessage('', 'hidden');
+
+      try {
+        var res = await fetch('/api/sms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: phone })
+        });
+        var data = await res.json();
+        if (res.ok && data.success) {
+          showMessage('验证码已发送', 'success');
+          countdown = 60;
+          updateCountdown(btn);
+          timer = setInterval(function() { updateCountdown(btn); }, 1000);
+        } else {
+          btn.disabled = false;
+          btn.textContent = '发送验证码';
+          showMessage(data.error || '发送失败', 'error');
+        }
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = '发送验证码';
+        showMessage('网络错误，请稍后重试', 'error');
       }
+    });
+
+    function updateCountdown(btn) {
+      if (countdown <= 0) {
+        clearInterval(timer);
+        btn.disabled = false;
+        btn.textContent = '发送验证码';
+        return;
+      }
+      btn.textContent = countdown + 's 后重发';
+      countdown--;
     }
 
     // 登录
@@ -150,13 +115,12 @@
 
       document.getElementById('loginForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        var username = document.getElementById('username').value.trim();
-        var password = document.getElementById('password').value;
+        var phone = document.getElementById('phone').value.trim();
+        var code = document.getElementById('code').value.trim();
 
-        if (!username || !password) {
-          showMessage('message', '请输入账号和密码', 'error');
-          return;
-        }
+        if (!phone) { showMessage('请输入手机号', 'error'); return; }
+        if (!code) { showMessage('请输入验证码', 'error'); return; }
+        if (!/^1[3-9]\d{9}$/.test(phone)) { showMessage('手机号格式不正确', 'error'); return; }
 
         setLoading(loginBtn, true);
 
@@ -164,13 +128,11 @@
           var res = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username, password: password })
+            body: JSON.stringify({ phone: phone, code: code })
           });
-
           var data = await res.json();
 
           if (res.ok && data.success) {
-            // 登录成功，跳回原始页面（如有 redirect 参数），否则去桌面端
             localStorage.setItem('user', JSON.stringify(data.user));
             localStorage.setItem('token', data.token);
             var params = new URLSearchParams(window.location.search);
@@ -178,66 +140,11 @@
             window.location.href = redirect ? decodeURIComponent(redirect) : '/main';
           } else {
             setLoading(loginBtn, false);
-            showMessage('message', data.error || '登录失败', 'error');
+            showMessage(data.error || '登录失败', 'error');
           }
         } catch (err) {
           setLoading(loginBtn, false);
-          showMessage('message', '网络错误，请稍后重试', 'error');
-        }
-      });
-    })();
-
-    // 注册
-    (function() {
-      var regBtn = document.getElementById('regSubmitBtn');
-      regBtn.dataset.defaultText = '注 册';
-
-      document.getElementById('registerForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        var username = document.getElementById('regUsername').value.trim();
-        var password = document.getElementById('regPassword').value;
-        var passwordConfirm = document.getElementById('regPasswordConfirm').value;
-
-        if (!username || !password) {
-          showMessage('regMessage', '请填写所有字段', 'error');
-          return;
-        }
-
-        if (password.length < 6) {
-          showMessage('regMessage', '密码长度不能少于6位', 'error');
-          return;
-        }
-
-        if (password !== passwordConfirm) {
-          showMessage('regMessage', '两次输入的密码不一致', 'error');
-          return;
-        }
-
-        setLoading(regBtn, true);
-
-        try {
-          var res = await fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username, password: password })
-          });
-
-          var data = await res.json();
-
-          if (res.ok && data.success) {
-            // 注册成功，自动登录
-            localStorage.setItem('user', JSON.stringify(data.user));
-            localStorage.setItem('token', data.token);
-            var params = new URLSearchParams(window.location.search);
-            var redirect = params.get('redirect');
-            window.location.href = redirect ? decodeURIComponent(redirect) : '/main';
-          } else {
-            showMessage('regMessage', data.error || '注册失败', 'error');
-            setLoading(regBtn, false);
-          }
-        } catch (err) {
-          showMessage('regMessage', '网络错误，请稍后重试', 'error');
-          setLoading(regBtn, false);
+          showMessage('网络错误，请稍后重试', 'error');
         }
       });
     })();

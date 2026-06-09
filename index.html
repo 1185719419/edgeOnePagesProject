@@ -30,11 +30,11 @@
 
       var container = document.getElementById('authCheck');
 
-      if (user && user.id && user.username) {
+      if (user && user.id && user.phone) {
         container.innerHTML =
           '<h1>记忆曲线任务日历</h1>' +
           '<p>基于艾宾浩斯记忆曲线的任务管理工具</p>' +
-          '<div class="landing-user">已登录: ' + escapeHtml(user.username) + '</div>' +
+          '<div class="landing-user">已登录: ' + escapeHtml(user.phone) + '</div>' +
           '<div class="landing-btn-group">' +
             '<a href="/main">进入日历</a>' +
             '<span class="landing-btn-secondary" id="landingLogout">退出登录</span>' +

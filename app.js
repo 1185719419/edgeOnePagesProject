@@ -17,7 +17,7 @@ function checkAuth() {
   try {
     var u = JSON.parse(localStorage.getItem('user'));
     var t = localStorage.getItem('token');
-    if (u && u.id && u.username && t) {
+    if (u && u.id && u.phone && t) {
       currentUser = u;
       return true;
     }
@@ -1361,9 +1361,9 @@ function openSettingsPage() {
   renderIntervalsEditor();
   // 填充账号信息
   if (currentUser) {
-    document.getElementById('settingsUsername').textContent = currentUser.username;
-    document.getElementById('accountName').textContent = currentUser.username;
-    document.getElementById('avatarLetter').textContent = (currentUser.username || '?')[0].toUpperCase();
+    document.getElementById('settingsUsername').textContent = currentUser.phone;
+    document.getElementById('accountName').textContent = currentUser.phone;
+    document.getElementById('avatarLetter').textContent = (currentUser.phone || '?').slice(-1);
   }
   document.getElementById('settingsPage').style.display = 'block';
 }

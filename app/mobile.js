@@ -605,7 +605,7 @@
 
   // ===== 设置 =====
   function openSettings() {
-    q('mAccountName').textContent = currentUser ? currentUser.username : '';
+    q('mAccountName').textContent = currentUser ? currentUser.phone : '';
     renderIntervals();
     renderBatchSelects();
     // reset tabs to default
