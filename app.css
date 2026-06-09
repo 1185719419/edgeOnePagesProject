@@ -1272,3 +1272,99 @@ h1 {
   max-width:94vw; max-height:94vh; object-fit:contain;
   border-radius:8px; box-shadow:0 4px 40px rgba(0,0,0,0.6);
 }
+
+/* ===== 主题 ===== */
+.theme-cards { display:flex; gap:16px; }
+.theme-card {
+  flex:1; padding:20px 16px; border:2px solid #e0e0e0; border-radius:12px;
+  text-align:center; cursor:pointer; transition:all .2s; background:#fff;
+}
+.theme-card:hover { border-color:#667eea; }
+.theme-card.active { border-color:#667eea; background:#f0f2ff; }
+.theme-card-preview {
+  width:100%; height:56px; border-radius:8px; margin-bottom:12px;
+}
+.theme-preview-light { background:#f5f6f9; border:1px solid #e0e0e0; }
+.theme-preview-dark { background:#1a1a2e; border:1px solid #3d3d5c; }
+.theme-card-label { font-size:0.95em; font-weight:600; color:#333; }
+
+/* ===== 深色主题 ===== */
+[data-theme="dark"] body {
+  background:#0f0f1a;
+}
+[data-theme="dark"] .container {
+  background:#1e1e36;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+[data-theme="dark"] h1 { color:#8fa4ff; }
+[data-theme="dark"] header { color:#e8eaed; }
+[data-theme="dark"] .settings-btn { color:#9aa0a6; }
+[data-theme="dark"] .settings-btn:hover { color:#8fa4ff; background:#2a2a4a; }
+[data-theme="dark"] .history-nav-btn { background:#2a2a4a; border-color:#3d3d5c; color:#9aa0a6; }
+[data-theme="dark"] .history-nav-btn:hover { border-color:#6c8cff; color:#6c8cff; background:#2f2f4a; }
+[data-theme="dark"] #currentMonth { color:#e8eaed; }
+[data-theme="dark"] .controls button { color:#9aa0a6; }
+[data-theme="dark"] .calendar { background:transparent; }
+[data-theme="dark"] .calendar-header { color:#e8eaed; }
+[data-theme="dark"] .calendar-weekdays { color:#9aa0a6; }
+[data-theme="dark"] .day-cell { background:#252540; border-color:#3d3d5c; color:#e8eaed; }
+[data-theme="dark"] .day-cell:hover { background:#2f2f4a; border-color:#6c8cff; }
+[data-theme="dark"] .day-cell.today { border-color:#6c8cff; background:#2a2a4a; }
+[data-theme="dark"] .day-cell.selected { background:#6c8cff; color:#fff; }
+[data-theme="dark"] .day-cell.other-month { color:#555; background:#1a1a30; }
+[data-theme="dark"] .day-cell.has-tasks { border-color:#8fa4ff; }
+[data-theme="dark"] .day-number { color:inherit; }
+[data-theme="dark"] .badge { background:#6c8cff; }
+[data-theme="dark"] .review-badge { background:#4a5ab0; }
+[data-theme="dark"] .task-list-overlay { background:rgba(0,0,0,0.6); }
+[data-theme="dark"] .task-list-content { background:#252540; color:#e8eaed; }
+[data-theme="dark"] .task-item { border-color:#3d3d5c; }
+[data-theme="dark"] .task-item:hover { background:#2f2f4a; }
+[data-theme="dark"] .task-text { color:#e8eaed; }
+[data-theme="dark"] .task-date { color:#9aa0a6; }
+[data-theme="dark"] .task-meta { color:#9aa0a6; }
+[data-theme="dark"] .task-imgs img { border-color:#3d3d5c; }
+[data-theme="dark"] .task-del-btn { color:#e5534b; }
+[data-theme="dark"] .task-del-btn:hover { background:#3d1a1a; }
+[data-theme="dark"] .modal-overlay { background:rgba(0,0,0,0.6); }
+[data-theme="dark"] .modal-content, [data-theme="dark"] .task-detail-modal-content, [data-theme="dark"] .edit-task-modal-content { background:#252540; color:#e8eaed; }
+[data-theme="dark"] .modal-header, [data-theme="dark"] .detail-modal-header, [data-theme="dark"] .edit-task-modal-header { border-color:#3d3d5c; }
+[data-theme="dark"] .modal-header h2, [data-theme="dark"] .detail-modal-header h2 { color:#e8eaed; }
+[data-theme="dark"] .modal-body textarea, [data-theme="dark"] .modal-body input { background:#1a1a30; border-color:#3d3d5c; color:#e8eaed; }
+[data-theme="dark"] .date-selects select { background:#1a1a30; border-color:#3d3d5c; color:#e8eaed; }
+[data-theme="dark"] .edit-btn, [data-theme="dark"] .add-btn { background:#6c8cff; }
+[data-theme="dark"] .delete-btn { background:#fff; color:#e5534b; border-color:#e5534b; }
+[data-theme="dark"] .page-overlay { background:rgba(0,0,0,0.5); }
+[data-theme="dark"] .page-container { background:#252540; }
+[data-theme="dark"] .page-header { border-color:#3d3d5c; }
+[data-theme="dark"] .page-header h2 { color:#e8eaed; }
+[data-theme="dark"] .page-back-btn { background:#1a1a30; border-color:#3d3d5c; color:#9aa0a6; }
+[data-theme="dark"] .page-back-btn:hover { background:#6c8cff; color:#fff; border-color:#6c8cff; }
+[data-theme="dark"] .settings-sidebar { background:#1e1e36; border-color:#3d3d5c; }
+[data-theme="dark"] .menu-item { border-color:#3d3d5c; }
+[data-theme="dark"] .menu-item:hover { background:#2f2f4a; }
+[data-theme="dark"] .menu-item.active { background:#2a2a4a; border-left-color:#6c8cff; }
+[data-theme="dark"] .menu-item-title { color:#e8eaed; }
+[data-theme="dark"] .menu-item-desc { color:#9aa0a6; }
+[data-theme="dark"] .settings-panel h3 { color:#e8eaed; }
+[data-theme="dark"] .settings-block-hint { color:#9aa0a6; }
+[data-theme="dark"] .interval-row { color:#e8eaed; }
+[data-theme="dark"] .interval-label { color:#9aa0a6; }
+[data-theme="dark"] .interval-row input { background:#1a1a30; border-color:#3d3d5c; color:#e8eaed; }
+[data-theme="dark"] .interval-row input:focus { border-color:#6c8cff; }
+[data-theme="dark"] .interval-del-btn { color:#e5534b; }
+[data-theme="dark"] .interval-del-btn:hover { background:#3d1a1a; }
+[data-theme="dark"] .batch-delete-selectors label, [data-theme="dark"] .batch-select-group label { color:#e8eaed; }
+[data-theme="dark"] .batch-select-group select { background:#1a1a30; border-color:#3d3d5c; color:#e8eaed; }
+[data-theme="dark"] .batch-delete-info { color:#9aa0a6; }
+[data-theme="dark"] .task-detail-content { color:#e8eaed; }
+[data-theme="dark"] .task-detail-meta { color:#9aa0a6; }
+[data-theme="dark"] .history-context-menu { background:#252540; border-color:#3d3d5c; }
+[data-theme="dark"] .history-item { border-color:#3d3d5c; }
+[data-theme="dark"] .history-item:hover { background:#2f2f4a; }
+[data-theme="dark"] .history-desc { color:#e8eaed; }
+[data-theme="dark"] .history-meta { color:#9aa0a6; }
+[data-theme="dark"] .theme-card { background:#252540; border-color:#3d3d5c; }
+[data-theme="dark"] .theme-card:hover { border-color:#6c8cff; }
+[data-theme="dark"] .theme-card.active { border-color:#6c8cff; background:#2a2a4a; }
+[data-theme="dark"] .theme-card-label { color:#e8eaed; }

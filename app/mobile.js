@@ -67,6 +67,9 @@
     q('mBatchYear').addEventListener('change', updateMobileBatchInfo);
     q('mBatchMonth').addEventListener('change', updateMobileBatchInfo);
     q('mLogoutBtn').addEventListener('click', logout);
+    // theme cards
+    q('mThemeCardLight').addEventListener('click', function() { setTheme('light'); });
+    q('mThemeCardDark').addEventListener('click', function() { setTheme('dark'); });
     q('mRevertCancel').addEventListener('click', function() { q('mRevertDialog').style.display='none'; });
     q('mRevertOk').addEventListener('click', executeRevert);
     // confirm dialog
@@ -81,6 +84,7 @@
         q('mPanel-intervals').style.display = panel === 'intervals' ? '' : 'none';
         q('mPanel-batchDelete').style.display = panel === 'batchDelete' ? '' : 'none';
         q('mPanel-account').style.display = panel === 'account' ? '' : 'none';
+        q('mPanel-theme').style.display = panel === 'theme' ? '' : 'none';
         if (panel === 'batchDelete') renderBatchSelects();
       });
     });
@@ -615,6 +619,7 @@
     q('mPanel-intervals').style.display = '';
     q('mPanel-batchDelete').style.display = 'none';
     q('mPanel-account').style.display = 'none';
+    q('mPanel-theme').style.display = 'none';
     q('mSettingsPage').style.display = 'flex';
   }
   function closeSettings() { q('mSettingsPage').style.display = 'none'; }
