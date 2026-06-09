@@ -5,6 +5,21 @@ function getEnv(context, name) {
 
 export default async function onRequest(context) {
   var results = {};
+
+  // 输出请求头（调试 IP 转发）
+  var h = context.request.headers;
+  results.requestHeaders = {
+    'x-forwarded-for': h.get('x-forwarded-for') || '(无)',
+    'x-real-ip': h.get('x-real-ip') || '(无)',
+    'cf-connecting-ip': h.get('cf-connecting-ip') || '(无)',
+    'x-client-ip': h.get('x-client-ip') || '(无)',
+    'true-client-ip': h.get('true-client-ip') || '(无)',
+    'eo-client-ip': h.get('eo-client-ip') || '(无)',
+    'x-edgeo-client-ip': h.get('x-edgeo-client-ip') || '(无)',
+    'remote-addr': h.get('remote-addr') || '(无)',
+    'host': h.get('host') || '(无)',
+  };
+
   var envId = getEnv(context, 'CLOUDBASE_ENV_ID');
   var apiKey = getEnv(context, 'CLOUDBASE_API_KEY');
 

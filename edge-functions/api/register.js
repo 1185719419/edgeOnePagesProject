@@ -83,7 +83,10 @@ export default async function onRequest(context) {
     if (password.length < 6) return json({ error: '密码长度不能少于6位' }, 400);
 
     // IP 注册频率限制
-    var ip = context.request.headers.get('x-forwarded-for') || context.request.headers.get('x-real-ip') || 'unknown';
+    var h = context.request.headers;
+    var ip = h.get('x-forwarded-for') || h.get('x-real-ip') || h.get('x-client-ip') ||
+             h.get('cf-connecting-ip') || h.get('true-client-ip') || h.get('x-edgeo-client-ip') ||
+             h.get('eo-client-ip') || '0.0.0.0';
     ip = ip.split(',')[0].trim();
     try { await apiCall(context, 'POST', BASE, { collectionName: 'reg_limits' }); } catch (e) {}
     var today = new Date().toISOString().slice(0, 10);
