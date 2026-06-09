@@ -216,8 +216,9 @@ body {
   width:100%; padding:11px; background:#fff; color:var(--c-danger);
   border:1.5px solid var(--c-danger); border-radius:10px;
   font-size:0.95em; font-weight:600; cursor:pointer; margin-top:6px;
+  transition: all 0.15s;
 }
-.m-btn-del-outline:active { background:#fef5f5; }
+.m-btn-del-outline:active { background:#fef5f5; transform:scale(0.97); }
 
 /* ---- Settings Page ---- */
 .m-page {

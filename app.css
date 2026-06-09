@@ -893,6 +893,11 @@ h1 {
     border-color: #667eea;
 }
 
+/* 退出登录按钮 */
+#settingsLogoutBtn { transition: all 0.15s; }
+#settingsLogoutBtn:hover { background: #fef5f5 !important; }
+#settingsLogoutBtn:active { transform: scale(0.96); background: #fde8e8 !important; }
+
 /* ---- 设置页左右分栏 ---- */
 .settings-layout {
     display: flex;
