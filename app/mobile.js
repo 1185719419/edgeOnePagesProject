@@ -320,7 +320,7 @@
     q('mSheetDay').disabled = false;
     q('mTaskInput').readOnly = false;
     q('mPickImage').style.display = '';
-    q('mSyncReviews').parentElement.style.display = '';
+    q('mSyncReviews').parentElement.style.display = 'none';
     q('mSheetTitle').textContent = '编辑任务';
     setDateSelects(dk);
     q('mTaskInput').value = task.text;
