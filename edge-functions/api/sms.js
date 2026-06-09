@@ -61,7 +61,7 @@ async function sendVerifyCode(phone, code, accessKeyId, accessKeySecret, signNam
     SignatureNonce: Date.now() + '' + Math.random(),
     SignatureVersion: '1.0',
     TemplateCode: templateCode,
-    TemplateParam: JSON.stringify({ code: code }),
+    TemplateParam: JSON.stringify({ code: code, min: '5' }),
     Timestamp: now.toISOString().replace(/\.\d{3}Z$/, 'Z'),
     Version: '2017-05-25',
     Interval: '60',
