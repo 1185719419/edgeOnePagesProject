@@ -48,7 +48,7 @@ async function aliSign(params, secret) {
   return btoa(String.fromCharCode.apply(null, new Uint8Array(sig)));
 }
 
-async function sendVerifyCode(phone, accessKeyId, accessKeySecret, signName, templateCode) {
+async function sendVerifyCode(phone, code, accessKeyId, accessKeySecret, signName, templateCode) {
   var now = new Date();
   var params = {
     AccessKeyId: accessKeyId,
@@ -61,11 +61,9 @@ async function sendVerifyCode(phone, accessKeyId, accessKeySecret, signName, tem
     SignatureNonce: Date.now() + '' + Math.random(),
     SignatureVersion: '1.0',
     TemplateCode: templateCode,
-    TemplateParam: JSON.stringify({ code: '##code##' }),
+    TemplateParam: JSON.stringify({ code: code }),
     Timestamp: now.toISOString().replace(/\.\d{3}Z$/, 'Z'),
     Version: '2017-05-25',
-    CodeType: '1',
-    ReturnVerifyCode: 'true',
     Interval: '60',
     DuplicatePolicy: '1',
   };
@@ -121,16 +119,16 @@ export default async function onRequest(context) {
       }
     } catch (e) {}
 
+    // 生成 6 位验证码
+    var code = '';
+    for (var i = 0; i < 6; i++) { code += Math.floor(Math.random() * 10); }
+
     // 调用阿里云号码认证
-    var result = await sendVerifyCode(phone, accessKeyId, accessKeySecret, signName, templateCode);
+    var result = await sendVerifyCode(phone, code, accessKeyId, accessKeySecret, signName, templateCode);
 
     if (result.Code !== 'OK') {
       return json({ error: '短信发送失败: ' + (result.Message || '未知错误') }, 500);
     }
-
-    // 阿里云返回的验证码
-    var code = result.CodeData && result.CodeData.Code || '';
-    if (!code) code = result.CodeData && result.CodeData.VerifyCode || '';
 
     // 存储验证码到 CloudBase，5 分钟过期
     try { await apiCall(context, 'DELETE', BASE + '/sms_codes/documents/' + encodeURIComponent(phone)); } catch (e) {}
