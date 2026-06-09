@@ -181,44 +181,19 @@
       var cls = t.isReview ? ' review' : '';
       return '<div class="m-task'+cls+'">'+
         '<span class="m-task-dot"></span>'+
-        '<div class="m-task-info">'+
+        '<div class="m-task-info" data-dk="'+dk+'" data-idx="'+i+'">'+
           '<div class="m-task-text'+(t.text?'':' no-text')+'">'+escapeHtml(t.text||'(无文字)')+'</div>'+
           '<div class="m-task-meta">'+(t.isReview?'复习 · 源自'+t.originalDate:'原始任务')+'</div>'+
           imgs+
-        '</div>'+
-        '<div class="m-task-btns">'+
-          '<button data-dk="'+dk+'" data-idx="'+i+'" class="m-edit-btn">编辑</button>'+
-          '<button data-dk="'+dk+'" data-idx="'+i+'" class="m-del">删除</button>'+
         '</div>'+
       '</div>';
     }).join('')+
     '<div class="m-day-add"><button data-dk="'+dk+'" class="m-day-add-btn">+ 添加任务</button></div>';
 
-    // bind task buttons
-    el.querySelectorAll('.m-edit-btn').forEach(function(b) {
-      b.addEventListener('click', function(e) {
-        e.stopPropagation();
-        openSheetForEdit(this.dataset.dk, parseInt(this.dataset.idx));
-      });
-    });
-    el.querySelectorAll('.m-del').forEach(function(b) {
-      b.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var dk = this.dataset.dk, idx = parseInt(this.dataset.idx);
-        var task = tasks[dk] && tasks[dk][idx];
-        if (!task) return;
-        if (!confirm('确定删除该任务'+(task.isReview?'（含关联复习）':'')+'？')) return;
-        deleteTask(dk, idx);
-      });
-    });
+    // bind task info click -> read-only view
     el.querySelectorAll('.m-task-info').forEach(function(info) {
       info.addEventListener('click', function() {
-        // find parent task buttons
-        var btns = this.parentElement.querySelector('.m-task-btns');
-        if (btns) {
-          var editBtn = btns.querySelector('.m-edit-btn');
-          if (editBtn) openSheetForEdit(editBtn.dataset.dk, parseInt(editBtn.dataset.idx));
-        }
+        openSheetForView(this.dataset.dk, parseInt(this.dataset.idx));
       });
     });
     el.querySelectorAll('.m-day-add-btn').forEach(function(b) {
@@ -287,6 +262,13 @@
     curDateKey = dk;
     curEditRef = null;
     newImages = [];
+    // reset from possible view-only state
+    q('mSheetYear').disabled = false;
+    q('mSheetMonth').disabled = false;
+    q('mSheetDay').disabled = false;
+    q('mTaskInput').readOnly = false;
+    q('mPickImage').style.display = '';
+    q('mSyncReviews').parentElement.style.display = '';
     q('mSheetTitle').textContent = '添加任务';
     setDateSelects(dk);
     q('mTaskInput').value = '';
@@ -310,6 +292,13 @@
       newFiles: [],
       removed: []
     };
+    // reset from possible view-only state
+    q('mSheetYear').disabled = false;
+    q('mSheetMonth').disabled = false;
+    q('mSheetDay').disabled = false;
+    q('mTaskInput').readOnly = false;
+    q('mPickImage').style.display = '';
+    q('mSyncReviews').parentElement.style.display = '';
     q('mSheetTitle').textContent = '编辑任务';
     setDateSelects(dk);
     q('mTaskInput').value = task.text;
@@ -327,6 +316,42 @@
     curEditRef = null;
     newImages = [];
     editImages = { existing:[], newFiles:[], removed:[] };
+  }
+
+  function openSheetForView(dk, idx) {
+    var task = tasks[dk] && tasks[dk][idx];
+    if (!task) return;
+    curDateKey = dk;
+    curEditRef = { dk:dk, idx:idx };
+    editImages = { existing: task.images ? task.images.slice() : [], newFiles: [], removed: [] };
+    q('mSheetTitle').textContent = '查看任务';
+    setDateSelects(dk);
+    // read-only: disable date selects
+    q('mSheetYear').disabled = true;
+    q('mSheetMonth').disabled = true;
+    q('mSheetDay').disabled = true;
+    q('mTaskInput').value = task.text;
+    q('mTaskInput').readOnly = true;
+    q('mSyncReviews').checked = false;
+    // hide all action buttons
+    q('mPickImage').style.display = 'none';
+    q('mSyncReviews').parentElement.style.display = 'none';
+    q('mSubmitBtn').style.display = 'none';
+    q('mDeleteBtn').style.display = 'none';
+    renderImgPreviewView();
+    q('mTaskSheet').style.display = 'flex';
+  }
+
+  function renderImgPreviewView() {
+    var container = q('mImgPreview');
+    var imgs = editImages.existing.concat(editImages.newFiles.map(function(f) { return f.data; }));
+    container.innerHTML = imgs.length===0 ? '' : imgs.map(function(src) {
+      return '<div class="m-img-item"><img src="'+src+'" alt=""></div>';
+    }).join('');
+    // bind click to image viewer
+    container.querySelectorAll('img').forEach(function(img) {
+      img.addEventListener('click', function() { openImageViewer(this.src); });
+    });
   }
 
   function openImageViewer(src) {
