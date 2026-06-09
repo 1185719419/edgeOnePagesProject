@@ -32,6 +32,24 @@ async function hashPassword(password, salt) {
   return Array.from(d).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 }
 
+async function hmacSign(data, secret) {
+  var enc = new TextEncoder();
+  var key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign']
+  );
+  var sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
+  return Array.from(new Uint8Array(sig)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+async function generateToken(userId, secret) {
+  var exp = Date.now() + 60000; // 1 分钟
+  var payload = userId + ':' + exp;
+  var sig = await hmacSign(payload, secret);
+  return btoa(payload + ':' + sig);
+}
+
 function json(data, status) {
   status = status || 200;
   return new Response(JSON.stringify(data), {
@@ -79,9 +97,13 @@ export default async function onRequest(context) {
     var userId = user._id;
     if (typeof userId === 'object' && userId.$oid) userId = userId.$oid;
 
+    var secret = getEnv(context, 'AUTH_SECRET') || 'mcs_default_secret_2026';
+    var token = await generateToken(userId, secret);
+
     return json({
       success: true,
       message: '登录成功',
+      token: token,
       user: { id: userId, username: user.username },
     });
   } catch (err) {

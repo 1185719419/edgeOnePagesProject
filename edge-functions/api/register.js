@@ -32,6 +32,24 @@ async function hashPassword(password, salt) {
   return Array.from(d).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
 }
 
+async function hmacSign(data, secret) {
+  var enc = new TextEncoder();
+  var key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign']
+  );
+  var sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
+  return Array.from(new Uint8Array(sig)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+async function generateToken(userId, secret) {
+  var exp = Date.now() + 60000;
+  var payload = userId + ':' + exp;
+  var sig = await hmacSign(payload, secret);
+  return btoa(payload + ':' + sig);
+}
+
 function generateSalt() {
   var arr = new Uint8Array(32);
   crypto.getRandomValues(arr);
@@ -64,6 +82,21 @@ export default async function onRequest(context) {
     if (!username || !password) return json({ error: '请填写账号和密码' }, 400);
     if (password.length < 6) return json({ error: '密码长度不能少于6位' }, 400);
 
+    // IP 注册频率限制
+    var ip = context.request.headers.get('x-forwarded-for') || context.request.headers.get('x-real-ip') || 'unknown';
+    ip = ip.split(',')[0].trim();
+    try { await apiCall(context, 'POST', BASE, { collectionName: 'reg_limits' }); } catch (e) {}
+    var today = new Date().toISOString().slice(0, 10);
+    var limitDocId = 'reg_' + ip + '_' + today;
+    var limitCount = 0;
+    try {
+      var limitDoc = await apiCall(context, 'GET', BASE + '/reg_limits/documents/' + encodeURIComponent(limitDocId));
+      limitCount = (limitDoc && limitDoc.count) ? limitDoc.count : 0;
+    } catch (e) {}
+    if (limitCount >= 10) {
+      return json({ error: '该设备今日注册次数已达上限（10次），请明天再试' }, 429);
+    }
+
     // 确保 users 集合存在
     try { await apiCall(context, 'POST', BASE, { collectionName: 'users' }); } catch (e) {}
 
@@ -89,7 +122,19 @@ export default async function onRequest(context) {
       }],
     });
 
-    return json({ success: true, message: '注册成功' });
+    // 更新注册计数
+    try {
+      await apiCall(context, 'DELETE', BASE + '/reg_limits/documents/' + encodeURIComponent(limitDocId));
+    } catch (e) {}
+    await apiCall(context, 'POST', BASE + '/reg_limits/documents', {
+      data: [{ _id: limitDocId, ip: ip, date: today, count: limitCount + 1 }],
+    });
+
+    // 生成 token 自动登录
+    var secret = getEnv(context, 'AUTH_SECRET') || 'mcs_default_secret_2026';
+    var token = await generateToken(username, secret);
+
+    return json({ success: true, message: '注册成功', token: token, user: { id: username, username: username } });
   } catch (err) {
     return json({ error: err.message }, 500);
   }

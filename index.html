@@ -43,6 +43,7 @@
           try { localStorage.removeItem('mcs_cache_' + user.id); } catch (e) {}
           try { localStorage.removeItem('mcs_history_' + user.id); } catch (e) {}
           localStorage.removeItem('user');
+          localStorage.removeItem('token');
           window.location.reload();
         });
       } else {

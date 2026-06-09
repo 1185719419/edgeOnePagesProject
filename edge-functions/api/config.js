@@ -4,6 +4,31 @@ function getEnv(context, name) {
   return undefined;
 }
 
+async function hmacSign(data, secret) {
+  var enc = new TextEncoder();
+  var key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false, ['sign']
+  );
+  var sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
+  return Array.from(new Uint8Array(sig)).map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+async function validateToken(token, secret) {
+  try {
+    var decoded = atob(token);
+    var parts = decoded.split(':');
+    if (parts.length !== 3) return null;
+    var userId = parts[0];
+    var exp = parseInt(parts[1]);
+    var sig = parts[2];
+    if (Date.now() > exp) return null;
+    var expected = await hmacSign(userId + ':' + exp, secret);
+    return sig === expected ? userId : null;
+  } catch (e) { return null; }
+}
+
 var BASE = '/v1/database/instances/(default)/databases/(default)/collections';
 
 async function apiCall(context, method, path, body) {
@@ -40,8 +65,11 @@ export default async function onRequest(context) {
 
   try {
     var url = new URL(context.request.url);
-    var userId = url.searchParams.get('userId');
-    if (!userId) return json({ error: '缺少 userId 参数' }, 400);
+    var authHeader = context.request.headers.get('Authorization') || '';
+    var token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : (url.searchParams.get('token') || '');
+    var secret = getEnv(context, 'AUTH_SECRET') || 'mcs_default_secret_2026';
+    var userId = await validateToken(token, secret);
+    if (!userId) return json({ error: '登录已过期，请重新登录' }, 401);
 
     try { await apiCall(context, 'POST', BASE, { collectionName: 'configs' }); } catch (e) {}
 

@@ -16,11 +16,14 @@ var detailViewMeta = '';
 function checkAuth() {
   try {
     var u = JSON.parse(localStorage.getItem('user'));
-    if (u && u.id && u.username) {
+    var t = localStorage.getItem('token');
+    if (u && u.id && u.username && t) {
       currentUser = u;
       return true;
     }
   } catch (e) {}
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
   var redirect = encodeURIComponent(window.location.pathname + window.location.search);
   window.location.href = '/login?redirect=' + redirect;
   return false;
@@ -28,6 +31,24 @@ function checkAuth() {
 
 function getUserId() {
   return currentUser ? currentUser.id : '';
+}
+
+function getToken() {
+  return localStorage.getItem('token') || '';
+}
+
+function apiFetch(url, options) {
+  options = options || {};
+  options.headers = options.headers || {};
+  options.headers['Authorization'] = 'Bearer ' + getToken();
+  return fetch(url, options).then(function(res) {
+    if (res.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+      throw new Error('unauthorized');
+    }
+    return res;
+  });
 }
 
 // ===== 操作历史 =====
@@ -239,6 +260,7 @@ function setupEventListeners() {
     try { localStorage.removeItem('mcs_cache_' + getUserId()); } catch (e) {}
     try { localStorage.removeItem('mcs_history_' + getUserId()); } catch (e) {}
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
     window.location.href = '/login';
   });
 
@@ -342,11 +364,11 @@ async function loadData() {
   } catch (e) {}
 
   // 并行从服务器加载
-  var configPromise = fetch('/api/config?userId=' + encodeURIComponent(userId))
+  var configPromise = apiFetch('/api/config?userId=' + encodeURIComponent(userId))
     .then(function(r) { return r.ok ? r.json() : null; })
     .catch(function() { return null; });
 
-  var tasksPromise = fetch('/api/tasks?userId=' + encodeURIComponent(userId))
+  var tasksPromise = apiFetch('/api/tasks?userId=' + encodeURIComponent(userId))
     .then(function(r) { return r.ok ? r.json() : null; })
     .catch(function() { return null; });
 
@@ -397,7 +419,7 @@ async function saveTasksToServer() {
   var userId = getUserId();
   var errMsg = '';
   try {
-    var res = await fetch('/api/tasks?userId=' + encodeURIComponent(userId), {
+    var res = await apiFetch('/api/tasks?userId=' + encodeURIComponent(userId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tasks: tasks }),
@@ -420,7 +442,7 @@ async function saveConfigToServer(arr) {
   }
   var userId = getUserId();
   try {
-    var res = await fetch('/api/config?userId=' + encodeURIComponent(userId), {
+    var res = await apiFetch('/api/config?userId=' + encodeURIComponent(userId), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ intervals: arr }),
