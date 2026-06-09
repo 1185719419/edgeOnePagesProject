@@ -91,7 +91,8 @@ export default async function onRequest(context) {
     var limitCount = 0;
     try {
       var limitDoc = await apiCall(context, 'GET', BASE + '/reg_limits/documents/' + encodeURIComponent(limitDocId));
-      limitCount = (limitDoc && limitDoc.count) ? limitDoc.count : 0;
+      var c = parseInt(limitDoc && limitDoc.count);
+      if (!isNaN(c)) limitCount = c;
     } catch (e) {}
     if (limitCount >= 10) {
       return json({ error: '该设备今日注册次数已达上限（10次），请明天再试' }, 429);
