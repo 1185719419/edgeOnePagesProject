@@ -82,7 +82,7 @@
         var data = await res.json();
         if (res.ok && data.success) {
           showMessage('验证码已发送', 'success');
-          countdown = 60;
+          countdown = 65;
           updateCountdown(btn);
           timer = setInterval(function() { updateCountdown(btn); }, 1000);
         } else {

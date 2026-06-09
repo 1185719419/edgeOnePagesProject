@@ -66,6 +66,8 @@ async function sendVerifyCode(phone, accessKeyId, accessKeySecret, signName, tem
     Version: '2017-05-25',
     CodeType: '1',
     ReturnVerifyCode: 'true',
+    Interval: '60',
+    DuplicatePolicy: '1',
   };
 
   var signature = await aliSign(params, accessKeySecret);
@@ -114,8 +116,8 @@ export default async function onRequest(context) {
     try { await apiCall(context, 'POST', BASE, { collectionName: 'sms_codes' }); } catch (e) {}
     try {
       var old = await apiCall(context, 'GET', BASE + '/sms_codes/documents/' + encodeURIComponent(phone));
-      if (old && old.sent_at && (Date.now() - old.sent_at) < 60000) {
-        return json({ error: '发送太频繁，请60秒后再试' }, 429);
+      if (old && old.sent_at && (Date.now() - old.sent_at) < 65000) {
+        return json({ error: '发送太频繁，请65秒后再试' }, 429);
       }
     } catch (e) {}
 
