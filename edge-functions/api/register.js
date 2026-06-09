@@ -94,8 +94,8 @@ export default async function onRequest(context) {
       var c = parseInt(limitDoc && limitDoc.count);
       if (!isNaN(c)) limitCount = c;
     } catch (e) {}
-    if (limitCount >= 10) {
-      return json({ error: '该设备今日注册次数已达上限（10次），请明天再试' }, 429);
+    if (limitCount >= 1) {
+      return json({ error: '该设备今日注册次数已达上限（1次），请明天再试' }, 429);
     }
 
     // 确保 users 集合存在
