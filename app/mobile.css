@@ -13,16 +13,6 @@
   --shadow: 0 1px 3px rgba(0,0,0,.04);
   --nav-h: 52px;
 }
-[data-theme="dark"] {
-  --c-bg: #1a1a2e;
-  --c-card: #252540;
-  --c-text: #e8eaed;
-  --c-sub: #9aa0a6;
-  --c-accent: #6c8cff;
-  --c-danger: #e54d42;
-  --c-border: #3d3d5c;
-  --shadow: 0 1px 3px rgba(0,0,0,.2);
-}
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
@@ -268,8 +258,6 @@ body {
   -webkit-appearance:none; appearance:none;
 }
 .m-select:focus { border-color:var(--c-accent); background:#fff; }
-[data-theme="dark"] .m-select { background:#1a1a30; color:#e8eaed; }
-[data-theme="dark"] .m-select:focus { background:#1a1a30; }
 
 /* Batch delete */
 .m-batch-selectors { display:flex; gap:12px; margin-bottom:12px; }
@@ -289,20 +277,6 @@ body {
   font-size:0.9em; text-align:center; outline:none;
 }
 .m-int-row input:focus { border-color:var(--c-accent); }
-[data-theme="dark"] .m-int-row input { background:#1a1a30; border-color:#3d3d5c; color:#e8eaed; }
-[data-theme="dark"] .m-task-imgs img { border-color:#3d3d5c; }
-[data-theme="dark"] .m-textarea { background:#1a1a30; border-color:#3d3d5c; color:#e8eaed; }
-[data-theme="dark"] .m-date-sel { background:#1a1a30; border-color:#3d3d5c; color:#e8eaed; }
-[data-theme="dark"] .m-chip { background:#2a2a4a; border-color:#3d3d5c; color:#e8eaed; }
-[data-theme="dark"] .m-chip-check { background:#2a2a4a; border-color:#3d3d5c; color:#e8eaed; }
-[data-theme="dark"] .m-hist-item { border-color:#3d3d5c; }
-[data-theme="dark"] .m-hist-item:active { background:#2f2f4a; }
-[data-theme="dark"] .m-nav { background:#252540; border-color:#3d3d5c; }
-[data-theme="dark"] .m-page-head { background:#252540; border-color:#3d3d5c; }
-[data-theme="dark"] .m-settings-tabs { background:#252540; border-color:#3d3d5c; }
-[data-theme="dark"] .m-task { border-color:#3d3d5c; }
-[data-theme="dark"] .m-day-head:active { background:#2f2f4a; }
-[data-theme="dark"] .m-day-body { border-color:#3d3d5c; }
 .m-int-row .m-int-x {
   margin-left:auto; background:none; border:none; color:var(--c-danger);
   font-size:1.1em; cursor:pointer; padding:4px 8px; border-radius:6px;
@@ -361,21 +335,6 @@ body {
   max-width:94vw; max-height:94vh; object-fit:contain;
   border-radius:6px; box-shadow:0 4px 30px rgba(0,0,0,0.5);
 }
-
-/* Theme */
-.m-theme-cards { display:flex; gap:12px; margin-bottom:6px; }
-.m-theme-card {
-  flex:1; padding:16px 12px; border:2px solid var(--c-border); border-radius:12px;
-  text-align:center; cursor:pointer; transition:all .2s; background:var(--c-card);
-}
-.m-theme-card.active { border-color:var(--c-accent); background:#eef2ff; }
-[data-theme="dark"] .m-theme-card.active { background:#2a2a4a; }
-.m-theme-card-preview {
-  width:100%; height:48px; border-radius:8px; margin-bottom:10px;
-}
-.m-theme-preview-light { background:#f5f6f9; border:1px solid #e0e0e0; }
-.m-theme-preview-dark { background:#1a1a2e; border:1px solid #3d3d5c; }
-.m-theme-card-label { font-size:0.92em; font-weight:600; color:var(--c-text); }
 
 /* ---- Desktop / 宽屏适配 ---- */
 @media (min-width: 768px) {

@@ -199,43 +199,8 @@ function getTypeLabel(type) {
   }
 }
 
-// ===== 主题 =====
-function initTheme() {
-  var saved = localStorage.getItem('theme') || 'light';
-  applyTheme(saved);
-  updateThemeCards(saved);
-}
-
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-}
-
-function setTheme(theme) {
-  localStorage.setItem('theme', theme);
-  applyTheme(theme);
-  updateThemeCards(theme);
-}
-
-function updateThemeCards(theme) {
-  // desktop
-  var lightCard = document.getElementById('themeCardLight');
-  var darkCard = document.getElementById('themeCardDark');
-  if (lightCard && darkCard) {
-    lightCard.classList.toggle('active', theme === 'light');
-    darkCard.classList.toggle('active', theme === 'dark');
-  }
-  // mobile
-  var mLight = document.getElementById('mThemeCardLight');
-  var mDark = document.getElementById('mThemeCardDark');
-  if (mLight && mDark) {
-    mLight.classList.toggle('active', theme === 'light');
-    mDark.classList.toggle('active', theme === 'dark');
-  }
-}
-
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', function() {
-  initTheme();
   if (!checkAuth()) return;
 
   currentYear = new Date().getFullYear();
@@ -275,13 +240,6 @@ function setupEventListeners() {
     try { localStorage.removeItem('mcs_history_' + getUserId()); } catch (e) {}
     localStorage.removeItem('user');
     window.location.href = '/login.html';
-  });
-
-  // theme cards
-  document.querySelectorAll('.theme-card').forEach(function(card) {
-    card.addEventListener('click', function() {
-      setTheme(this.dataset.theme);
-    });
   });
 
   document.querySelectorAll('.settings-sidebar .menu-item').forEach(function(item) {
