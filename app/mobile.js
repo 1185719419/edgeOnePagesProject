@@ -186,10 +186,32 @@
           '<div class="m-task-meta">'+(t.isReview?'复习 · 源自'+t.originalDate:'原始任务')+'</div>'+
           imgs+
         '</div>'+
+        '<div class="m-task-btns">'+
+          '<button data-dk="'+dk+'" data-idx="'+i+'" class="m-edit-btn">编辑</button>'+
+          '<button data-dk="'+dk+'" data-idx="'+i+'" class="m-del">删除</button>'+
+        '</div>'+
       '</div>';
     }).join('')+
     '<div class="m-day-add"><button data-dk="'+dk+'" class="m-day-add-btn">+ 添加任务</button></div>';
 
+    // bind edit/delete buttons
+    el.querySelectorAll('.m-edit-btn').forEach(function(b) {
+      b.addEventListener('click', function(e) {
+        e.stopPropagation();
+        openSheetForEdit(this.dataset.dk, parseInt(this.dataset.idx));
+      });
+    });
+    el.querySelectorAll('.m-del').forEach(function(b) {
+      b.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var dk = this.dataset.dk, idx = parseInt(this.dataset.idx);
+        var task = tasks[dk] && tasks[dk][idx];
+        if (!task) return;
+        showConfirm('确认删除', '确定删除该任务'+(task.isReview?'（含关联复习）':'')+'？', function() {
+          deleteTask(dk, idx);
+        }, '删除');
+      });
+    });
     // bind task info click -> read-only view
     el.querySelectorAll('.m-task-info').forEach(function(info) {
       info.addEventListener('click', function() {
