@@ -1,4 +1,4 @@
-// 短信验证码 API — 阿里云 SMS
+// 短信验证码 API — 阿里云号码认证（Dypnsapi）
 function getEnv(context, name) {
   try { if (context && context.env && context.env[name]) return context.env[name]; } catch (_) {}
   return undefined;
@@ -31,7 +31,7 @@ function json(data, status) {
   });
 }
 
-// 阿里云 SMS 签名
+// 阿里云 API 签名
 async function aliSign(params, secret) {
   var enc = new TextEncoder();
   var keys = Object.keys(params).sort();
@@ -48,25 +48,25 @@ async function aliSign(params, secret) {
   return btoa(String.fromCharCode.apply(null, new Uint8Array(sig)));
 }
 
-async function sendSms(phone, code, accessKeyId, accessKeySecret, signName, templateCode) {
+async function sendVerifyCode(phone, accessKeyId, accessKeySecret, signName, templateCode) {
+  var now = new Date();
   var params = {
     AccessKeyId: accessKeyId,
-    Action: 'SendSms',
+    Action: 'SendSmsVerifyCode',
     Format: 'JSON',
-    PhoneNumbers: phone,
+    PhoneNumber: phone,
     RegionId: 'cn-hangzhou',
     SignName: signName,
     SignatureMethod: 'HMAC-SHA1',
     SignatureNonce: Date.now() + '' + Math.random(),
     SignatureVersion: '1.0',
     TemplateCode: templateCode,
-    TemplateParam: JSON.stringify({ code: code }),
-    Timestamp: new Date().toISOString().replace(/\.\d{3}/, '').replace(/-/g, '-').replace(/:/g, ':') + 'Z',
+    TemplateParam: JSON.stringify({ code: '##code##' }),
+    Timestamp: now.toISOString().replace(/\.\d{3}Z$/, 'Z'),
     Version: '2017-05-25',
+    CodeType: '1',
+    ReturnVerifyCode: 'true',
   };
-  // 用 UTC 格式纠正
-  var now = new Date();
-  params.Timestamp = now.toISOString().replace(/\.\d{3}Z$/, 'Z');
 
   var signature = await aliSign(params, accessKeySecret);
   params.Signature = signature;
@@ -76,7 +76,7 @@ async function sendSms(phone, code, accessKeyId, accessKeySecret, signName, temp
     return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
   }).join('&');
 
-  var url = 'https://dysmsapi.aliyuncs.com/?' + qs;
+  var url = 'https://dypnsapi.aliyuncs.com/?' + qs;
   var res = await fetch(url);
   var text = await res.text();
   var data = null;
@@ -119,16 +119,16 @@ export default async function onRequest(context) {
       }
     } catch (e) {}
 
-    // 生成 6 位验证码
-    var code = '';
-    for (var i = 0; i < 6; i++) { code += Math.floor(Math.random() * 10); }
+    // 调用阿里云号码认证
+    var result = await sendVerifyCode(phone, accessKeyId, accessKeySecret, signName, templateCode);
 
-    // 调用阿里云短信
-    var smsResult = await sendSms(phone, code, accessKeyId, accessKeySecret, signName, templateCode);
-
-    if (smsResult.Code !== 'OK') {
-      return json({ error: '短信发送失败: ' + (smsResult.Message || '未知错误') }, 500);
+    if (result.Code !== 'OK') {
+      return json({ error: '短信发送失败: ' + (result.Message || '未知错误') }, 500);
     }
+
+    // 阿里云返回的验证码
+    var code = result.CodeData && result.CodeData.Code || '';
+    if (!code) code = result.CodeData && result.CodeData.VerifyCode || '';
 
     // 存储验证码到 CloudBase，5 分钟过期
     try { await apiCall(context, 'DELETE', BASE + '/sms_codes/documents/' + encodeURIComponent(phone)); } catch (e) {}
