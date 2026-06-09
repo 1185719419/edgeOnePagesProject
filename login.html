@@ -174,7 +174,7 @@
             localStorage.setItem('user', JSON.stringify(data.user));
             var params = new URLSearchParams(window.location.search);
             var redirect = params.get('redirect');
-            window.location.href = redirect ? decodeURIComponent(redirect) : '/main.html';
+            window.location.href = redirect ? decodeURIComponent(redirect) : '/main';
           } else {
             setLoading(loginBtn, false);
             showMessage('message', data.error || '登录失败', 'error');

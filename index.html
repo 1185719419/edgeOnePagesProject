@@ -36,7 +36,7 @@
           '<p>基于艾宾浩斯记忆曲线的任务管理工具</p>' +
           '<div class="landing-user">已登录: ' + escapeHtml(user.username) + '</div>' +
           '<div class="landing-btn-group">' +
-            '<a href="/main.html">进入日历</a>' +
+            '<a href="/main">进入日历</a>' +
             '<span class="landing-btn-secondary" id="landingLogout">退出登录</span>' +
           '</div>';
         document.getElementById('landingLogout').addEventListener('click', function() {
@@ -49,7 +49,7 @@
         container.innerHTML =
           '<h1>记忆曲线任务日历</h1>' +
           '<p>基于艾宾浩斯记忆曲线的任务管理工具</p>' +
-          '<a href="/login.html">登录 / 注册</a>';
+          '<a href="/login">登录 / 注册</a>';
       }
 
       function escapeHtml(str) {

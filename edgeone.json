@@ -15,6 +15,14 @@
     {
       "source": "/w/",
       "destination": "/app/index.html"
+    },
+    {
+      "source": "/main",
+      "destination": "/main.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
     }
   ],
   "headers": [

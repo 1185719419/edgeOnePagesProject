@@ -769,7 +769,7 @@
     try { localStorage.removeItem('mcs_cache_'+getUserId()); } catch(e) {}
     try { localStorage.removeItem('mcs_history_'+getUserId()); } catch(e) {}
     localStorage.removeItem('user');
-    window.location.href = '/login.html?redirect=' + encodeURIComponent('/app/index.html');
+    window.location.href = '/login?redirect=' + encodeURIComponent('/app');
   }
 
   // ===== 历史 =====

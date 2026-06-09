@@ -22,7 +22,7 @@ function checkAuth() {
     }
   } catch (e) {}
   var redirect = encodeURIComponent(window.location.pathname + window.location.search);
-  window.location.href = '/login.html?redirect=' + redirect;
+  window.location.href = '/login?redirect=' + redirect;
   return false;
 }
 
@@ -239,7 +239,7 @@ function setupEventListeners() {
     try { localStorage.removeItem('mcs_cache_' + getUserId()); } catch (e) {}
     try { localStorage.removeItem('mcs_history_' + getUserId()); } catch (e) {}
     localStorage.removeItem('user');
-    window.location.href = '/login.html';
+    window.location.href = '/login';
   });
 
   document.querySelectorAll('.settings-sidebar .menu-item').forEach(function(item) {
