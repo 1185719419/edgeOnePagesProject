@@ -1,6 +1,6 @@
 // ===== 记忆曲线任务日历 - CloudBase 版本 =====
 
-var DEFAULT_INTERVALS = [1, 3, 6, 13, 27];
+var DEFAULT_INTERVALS = [2, 7, 14, 30];
 var REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
 
 var currentUser = null;
@@ -1357,8 +1357,9 @@ function renderIntervalsEditor() {
   container.innerHTML = arr.map(function(v, i) {
     return '<div class="interval-row">' +
       '<span class="interval-label">第 ' + (i + 1) + ' 次复习</span>' +
+      '<span>第</span>' +
       '<input type="number" min="1" max="365" value="' + v + '">' +
-      '<span>天后</span>' +
+      '<span>天</span>' +
       '<button class="interval-del-btn' + (i >= 5 ? ' visible' : '') + '" title="删除">&times;</button>' +
       '</div>';
   }).join('');
@@ -1379,15 +1380,20 @@ function renderIntervalsEditor() {
 function addInterval() {
   var container = document.getElementById('intervalsEditor');
   var rows = container.querySelectorAll('.interval-row');
-  var lastInput = rows.length > 0 ? rows[rows.length - 1].querySelector('input') : null;
-  var nextVal = lastInput ? Math.min((parseInt(lastInput.value) || 1) * 2, 365) : 1;
+  var maxVal = 1;
+  rows.forEach(function(r) {
+    var v = parseInt(r.querySelector('input').value) || 1;
+    if (v > maxVal) maxVal = v;
+  });
+  var nextVal = Math.min(maxVal * 2, 365);
   var idx = rows.length + 1;
   var row = document.createElement('div');
   row.className = 'interval-row';
   row.innerHTML =
     '<span class="interval-label">第 ' + idx + ' 次复习</span>' +
-    '<input type="number" min="1" max="365" value="' + Math.min(nextVal, 365) + '">' +
-    '<span>天后</span>' +
+    '<span>第</span>' +
+    '<input type="number" min="1" max="365" value="' + nextVal + '">' +
+    '<span>天</span>' +
     '<button class="interval-del-btn visible" title="删除">&times;</button>';
   row.querySelector('.interval-del-btn').addEventListener('click', function() {
     var rows = container.querySelectorAll('.interval-row');
@@ -1425,6 +1431,13 @@ async function saveSettings() {
   });
   arr.sort(function(a, b) { return a - b; });
   if (arr.length < DEFAULT_INTERVALS.length) arr = DEFAULT_INTERVALS.slice();
+  // check duplicates
+  for (var i = 1; i < arr.length; i++) {
+    if (arr[i] === arr[i-1]) {
+      alert('复习日期不能重复：第 ' + arr[i] + ' 天出现了多次');
+      return;
+    }
+  }
   var oldIntervals = REVIEW_INTERVALS;
   REVIEW_INTERVALS = arr;
 

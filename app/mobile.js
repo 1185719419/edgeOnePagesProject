@@ -627,8 +627,9 @@
     c.innerHTML = REVIEW_INTERVALS.map(function(v,i) {
       return '<div class="m-int-row">'+
         '<span class="m-int-label">第'+(i+1)+'次复习</span>'+
+        '<span>第</span>'+
         '<input type="number" min="1" max="365" value="'+v+'">'+
-        '<span>天后</span>'+
+        '<span>天</span>'+
         '<button class="m-int-x'+(i>=5?'':' hidden')+'">&times;</button>'+
       '</div>';
     }).join('');
@@ -647,13 +648,18 @@
   function addInterval() {
     var c = q('mIntervals');
     var rows = c.querySelectorAll('.m-int-row');
-    var last = rows.length>0 ? rows[rows.length-1].querySelector('input') : null;
-    var v = last ? Math.min((parseInt(last.value)||1)*2,365) : 1;
+    var maxVal = 1;
+    rows.forEach(function(r) {
+      var v = parseInt(r.querySelector('input').value) || 1;
+      if (v > maxVal) maxVal = v;
+    });
+    var v = Math.min(maxVal * 2, 365);
     var div = document.createElement('div');
     div.className = 'm-int-row';
     div.innerHTML = '<span class="m-int-label">第'+(rows.length+1)+'次复习</span>'+
+      '<span>第</span>'+
       '<input type="number" min="1" max="365" value="'+v+'">'+
-      '<span>天后</span>'+
+      '<span>天</span>'+
       '<button class="m-int-x">&times;</button>';
     div.querySelector('.m-int-x').addEventListener('click', function() {
       var curRows = c.querySelectorAll('.m-int-row');
@@ -682,6 +688,9 @@
     inputs.forEach(function(inp) { var v=parseInt(inp.value)||1; arr.push(Math.max(1,Math.min(365,v))); });
     arr.sort(function(a,b) { return a-b; });
     if (arr.length < DEFAULT_INTERVALS.length) arr = DEFAULT_INTERVALS.slice();
+    for (var di = 1; di < arr.length; di++) {
+      if (arr[di] === arr[di-1]) { alert('复习日期不能重复：第 ' + arr[di] + ' 天出现了多次'); return; }
+    }
     var old = REVIEW_INTERVALS;
     REVIEW_INTERVALS = arr;
 
