@@ -59,9 +59,9 @@ export default async function onRequest(context) {
             if (typeof v !== 'number' || v < 1 || v > 365) { valid = false; break; }
           }
         }
-        return json({ intervals: valid ? intervals : [2, 7, 14, 30] });
+        return json({ intervals: valid ? intervals : [2, 7, 14, 30, 60] });
       } catch (e) {
-        return json({ intervals: [2, 7, 14, 30] });
+        return json({ intervals: [2, 7, 14, 30, 60] });
       }
     }
 
@@ -71,7 +71,7 @@ export default async function onRequest(context) {
       try { await apiCall(context, 'DELETE', BASE + '/configs/documents/' + encodeURIComponent(userId)); } catch (e) {}
 
       await apiCall(context, 'POST', BASE + '/configs/documents', {
-        data: [{ _id: userId, userId: userId, intervals: (body.intervals && body.intervals.length >= 5) ? body.intervals : [2, 7, 14, 30], updated_at: Date.now() }],
+        data: [{ _id: userId, userId: userId, intervals: (body.intervals && body.intervals.length >= 5) ? body.intervals : [2, 7, 14, 30, 60], updated_at: Date.now() }],
       });
 
       return json({ ok: true });

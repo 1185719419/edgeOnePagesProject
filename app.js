@@ -1,6 +1,6 @@
 // ===== 记忆曲线任务日历 - CloudBase 版本 =====
 
-var DEFAULT_INTERVALS = [2, 7, 14, 30];
+var DEFAULT_INTERVALS = [2, 7, 14, 30, 60];
 var REVIEW_INTERVALS = DEFAULT_INTERVALS.slice();
 
 var currentUser = null;
