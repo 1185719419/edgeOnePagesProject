@@ -1225,12 +1225,16 @@ function showConfirm(title, message, onConfirm, confirmText) {
   if (isMobile) {
     document.getElementById('mConfirmTitle').textContent = title;
     document.getElementById('mConfirmBody').textContent = message;
+    document.getElementById('mConfirmCancel').style.display = '';
     var okBtn = document.getElementById('mConfirmOk');
     okBtn.textContent = confirmText || '确认';
+    okBtn.style.background = '';
     okBtn.onclick = function() {
       document.getElementById('mConfirmDialog').style.display = 'none';
       onConfirm();
     };
+    var singleBtn = document.getElementById('mConfirmSingleBtn');
+    if (singleBtn) singleBtn.style.display = 'none';
     document.getElementById('mConfirmDialog').style.display = 'flex';
   } else {
     document.getElementById('confirmDialogTitle').textContent = title;

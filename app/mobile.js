@@ -207,9 +207,14 @@
         var dk = this.dataset.dk, idx = parseInt(this.dataset.idx);
         var task = tasks[dk] && tasks[dk][idx];
         if (!task) return;
-        showConfirm('确认删除', '确定删除该任务'+(task.isReview?'（含关联复习）':'')+'？', function() {
-          deleteTask(dk, idx);
-        }, '删除');
+        var linked = countLinkedReviews(dk, idx, task);
+        if (linked > 0) {
+          showDeleteChoiceMobile(dk, idx, linked);
+        } else {
+          showConfirm('确认删除', '确定删除该任务？', function() {
+            deleteTask(dk, idx);
+          }, '删除');
+        }
       });
     });
     // bind task info click -> read-only view
@@ -542,6 +547,49 @@
     recordHistory('delete', '删除 '+items.length+' 条任务', snapshot);
     closeSheet();
     renderMonth();
+  }
+
+  function showDeleteChoiceMobile(dk, idx, linkedCount) {
+    q('mConfirmTitle').textContent = '确认删除';
+    q('mConfirmBody').textContent = '此任务有 ' + linkedCount + ' 条关联复习任务';
+    // hide cancel, show two action buttons
+    q('mConfirmCancel').style.display = 'none';
+    q('mConfirmOk').textContent = '删除全部关联(' + (linkedCount + 1) + '条)';
+    q('mConfirmOk').style.background = '#d83a52';
+    q('mConfirmOk').onclick = function() {
+      q('mConfirmDialog').style.display = 'none';
+      q('mConfirmCancel').style.display = '';
+      q('mConfirmOk').style.background = '';
+      deleteTask(dk, idx);
+    };
+    // add second action button if not exists
+    var btns = q('mConfirmDialog').querySelector('.m-dialog-btns');
+    var singleBtn = document.getElementById('mConfirmSingleBtn');
+    if (!singleBtn) {
+      singleBtn = document.createElement('button');
+      singleBtn.id = 'mConfirmSingleBtn';
+      singleBtn.className = 'm-chip';
+      singleBtn.style.color = '#d83a52';
+      singleBtn.style.borderColor = '#d83a52';
+      btns.insertBefore(singleBtn, q('mConfirmOk'));
+    }
+    singleBtn.style.display = '';
+    singleBtn.textContent = '仅删此项';
+    singleBtn.onclick = async function() {
+      q('mConfirmDialog').style.display = 'none';
+      q('mConfirmCancel').style.display = '';
+      q('mConfirmOk').style.background = '';
+      singleBtn.style.display = 'none';
+      var snapshot = JSON.parse(JSON.stringify(tasks));
+      tasks[dk].splice(idx, 1);
+      if (tasks[dk].length === 0) delete tasks[dk];
+      var ok = await saveTasksToServer();
+      if (!ok) { tasks = snapshot; return; }
+      recordHistory('delete', '删除任务', snapshot);
+      closeSheet();
+      renderMonth();
+    };
+    q('mConfirmDialog').style.display = 'flex';
   }
 
   // 编辑界面中的删除按钮
