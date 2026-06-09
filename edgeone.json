@@ -7,6 +7,14 @@
     {
       "source": "/app/",
       "destination": "/app/index.html"
+    },
+    {
+      "source": "/w",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/w/",
+      "destination": "/app/index.html"
     }
   ],
   "headers": [
