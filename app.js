@@ -1044,7 +1044,7 @@ function addReviewTasks(originalDateKey, taskText, images) {
 
   REVIEW_INTERVALS.forEach(function(interval) {
     var reviewDate = new Date(originalDate);
-    reviewDate.setDate(reviewDate.getDate() + interval);
+    reviewDate.setDate(reviewDate.getDate() + interval - 1);
     var reviewDateKey = reviewDate.getFullYear() + '-' + pad(reviewDate.getMonth() + 1) + '-' + pad(reviewDate.getDate());
 
     if (!tasks[reviewDateKey]) tasks[reviewDateKey] = [];
