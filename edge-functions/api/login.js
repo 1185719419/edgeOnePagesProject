@@ -153,38 +153,31 @@ export default async function onRequest(context) {
       if (typeof eid === 'object' && eid.$oid) existingUser._id = eid.$oid;
     } catch (e) {}
 
-    // ===== 验证码 + 密码 → 创建账号或设置密码 =====
+    // ===== 验证码 + 密码 → 注册新账号 =====
     if (password) {
       if (password.length < 6) return json({ error: '密码长度不能少于6位' }, 400);
+
+      if (existingUser) {
+        return json({ error: '该手机号已注册，请直接登录' }, 409);
+      }
 
       var salt = generateSalt();
       var pwHash = await hashPassword(password, salt);
 
-      if (existingUser) {
-        // 已有账号，更新密码
-        try { await apiCall(context, 'DELETE', BASE + '/users/documents/' + encodeURIComponent(phone)); } catch (e) {}
-        existingUser.salt = salt;
-        existingUser.password_hash = pwHash;
-        await apiCall(context, 'POST', BASE + '/users/documents', { data: [existingUser] });
-      } else {
-        // 新建账号
-        await apiCall(context, 'POST', BASE + '/users/documents', {
-          data: [{ _id: phone, phone: phone, password_hash: pwHash, salt: salt, created_at: Date.now() }],
-        });
-      }
+      await apiCall(context, 'POST', BASE + '/users/documents', {
+        data: [{ _id: phone, phone: phone, password_hash: pwHash, salt: salt, created_at: Date.now() }],
+      });
 
-      // 删除验证码
       try { await apiCall(context, 'DELETE', BASE + '/sms_codes/documents/' + encodeURIComponent(phone)); } catch (e) {}
 
-      var userId = existingUser ? existingUser._id : phone;
       var secret2 = getEnv(context, 'AUTH_SECRET') || 'mcs_default_secret_2026';
-      var token2 = await generateToken(userId, secret2);
+      var token2 = await generateToken(phone, secret2);
 
       return json({
         success: true,
-        message: existingUser ? '密码设置成功' : '注册成功',
+        message: '注册成功',
         token: token2,
-        user: { id: userId, phone: phone },
+        user: { id: phone, phone: phone },
       });
     }
 

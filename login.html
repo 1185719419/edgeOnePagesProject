@@ -239,7 +239,20 @@
         var res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone, code: code, password: pwd }) });
         var data = await res.json();
         if (res.ok && data.success) { loginSuccess(data); }
-        else { setLoading(btnReg, false, '注 册'); showMsg('msgReg', friendlyMsg(data.error), 'error'); }
+        else {
+          setLoading(btnReg, false, '注 册');
+          var err = friendlyMsg(data.error);
+          if (err.indexOf('已注册') !== -1) {
+            showMsg('msgReg', '该手机号已注册，请返回登录', 'error');
+            setTimeout(function() {
+              document.getElementById('registerCard').style.display = 'none';
+              document.getElementById('loginCard').style.display = '';
+              document.getElementById('phoneCode').value = phone;
+            }, 1500);
+          } else {
+            showMsg('msgReg', err, 'error');
+          }
+        }
       } catch (e) { setLoading(btnReg, false, '注 册'); showMsg('msgReg', '网络错误', 'error'); }
     });
   </script>
