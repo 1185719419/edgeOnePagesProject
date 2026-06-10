@@ -10,15 +10,8 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <div class="login-icon">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-            <polyline points="17 8 12 3 7 8"/>
-            <line x1="12" y1="3" x2="12" y2="15"/>
-          </svg>
-        </div>
-        <h1>记忆曲线任务日历</h1>
-        <p class="login-subtitle">基于艾宾浩斯记忆曲线，科学管理你的学习任务</p>
+        <h1 id="loginTitle">登录</h1>
+        <p class="login-subtitle" id="loginSub">基于艾宾浩斯记忆曲线的任务管理日历</p>
       </div>
 
       <div class="tab-row">
@@ -135,6 +128,8 @@
               document.getElementById('codeInput').disabled = true;
               document.getElementById('sendSmsBtn').disabled = true;
               btnCode.textContent = '设置密码并登录'; btnCode.disabled = false;
+              document.getElementById('loginTitle').textContent = '创建账号';
+              document.getElementById('loginSub').textContent = '首次登录，请设置登录密码完成注册';
               showMsg('msgCode', '请设置登录密码，后续也可用验证码登录', 'success');
             } else {
               localStorage.setItem('user', JSON.stringify(data.user));
