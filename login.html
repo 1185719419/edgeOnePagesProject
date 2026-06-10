@@ -14,7 +14,14 @@
     }
     .sms-btn:disabled { color:#ccc; border-color:#ccc; cursor:not-allowed; }
     .sms-btn:hover:not(:disabled) { background:#667eea; color:#fff; }
-    .login-phone-hint { font-size:0.85em; color:#8b949e; margin-bottom:16px; }
+    .tab-row { display:flex; gap:0; margin-bottom:20px; border-bottom:2px solid #e0e0e0; }
+    .tab-btn {
+      flex:1; padding:10px; border:none; background:none; font-size:0.95em; font-weight:600;
+      color:#999; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .2s;
+    }
+    .tab-btn.active { color:#667eea; border-bottom-color:#667eea; }
+    #stepCode, #stepPassword { display:none; }
+    .back-link { font-size:0.85em; color:#667eea; cursor:pointer; text-align:left; margin-top:8px; }
   </style>
 </head>
 <body>
@@ -25,110 +32,208 @@
         <p class="login-subtitle">基于艾宾浩斯记忆曲线的任务管理日历</p>
       </div>
 
-      <form id="loginForm" class="login-form">
+      <!-- 登录方式切换 -->
+      <div class="tab-row">
+        <button class="tab-btn active" id="tabCode">验证码登录</button>
+        <button class="tab-btn" id="tabPwd">密码登录</button>
+      </div>
+
+      <!-- 验证码登录 -->
+      <div id="formCode">
         <div class="form-group">
-          <label for="phone">手机号</label>
-          <input type="tel" id="phone" name="phone" placeholder="请输入手机号" autocomplete="tel" maxlength="11" required>
+          <label for="phoneCode">手机号</label>
+          <input type="tel" id="phoneCode" placeholder="请输入手机号" autocomplete="tel" maxlength="11">
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="stepCode">
           <label>验证码</label>
           <div class="sms-row">
-            <input type="text" id="code" name="code" placeholder="请输入验证码" autocomplete="one-time-code" maxlength="6" inputmode="numeric" required>
+            <input type="text" id="codeInput" placeholder="请输入验证码" autocomplete="one-time-code" maxlength="6" inputmode="numeric">
             <button type="button" id="sendSmsBtn" class="sms-btn">发送验证码</button>
           </div>
         </div>
 
-        <div id="message" class="message hidden"></div>
+        <div class="form-group" id="stepPassword">
+          <label for="pwdNew">设置登录密码</label>
+          <input type="password" id="pwdNew" placeholder="请设置6位以上密码" minlength="6">
+          <div class="back-link" id="goBackCode">重新输入验证码</div>
+        </div>
 
-        <button type="submit" id="submitBtn" class="login-btn">登 录</button>
-      </form>
+        <div id="msgCode" class="message hidden"></div>
+
+        <button type="button" id="btnCode" class="login-btn">获取验证码</button>
+      </div>
+
+      <!-- 密码登录 -->
+      <div id="formPwd" style="display:none;">
+        <div class="form-group">
+          <label for="phonePwd">手机号</label>
+          <input type="tel" id="phonePwd" placeholder="请输入手机号" autocomplete="tel" maxlength="11">
+        </div>
+        <div class="form-group">
+          <label for="pwdLogin">密码</label>
+          <input type="password" id="pwdLogin" placeholder="请输入密码" minlength="6">
+        </div>
+        <div id="msgPwd" class="message hidden"></div>
+        <button type="button" id="btnPwd" class="login-btn">登 录</button>
+      </div>
     </div>
   </div>
 
   <script>
     var countdown = 0;
     var timer = null;
+    var codeVerified = false;
+    var verifiedPhone = '';
 
-    function showMessage(text, type) {
-      var el = document.getElementById('message');
+    function showMsg(elId, text, type) {
+      var el = document.getElementById(elId);
       el.textContent = text;
-      el.className = 'message ' + type;
+      el.className = 'message ' + (type || 'hidden');
     }
 
-    function setLoading(btn, loading) {
+    function setLoading(btn, loading, text) {
       btn.disabled = loading;
-      btn.textContent = loading ? '处理中...' : (btn.dataset.defaultText || btn.textContent);
+      if (text) btn.textContent = text;
       if (!loading && btn.dataset.defaultText) btn.textContent = btn.dataset.defaultText;
     }
 
-    // 发送验证码
-    document.getElementById('sendSmsBtn').addEventListener('click', async function() {
-      var phone = document.getElementById('phone').value.trim();
-      if (!phone) { showMessage('请输入手机号', 'error'); return; }
-      if (!/^1[3-9]\d{9}$/.test(phone)) { showMessage('手机号格式不正确', 'error'); return; }
+    // ==== Tab 切换 ====
+    document.getElementById('tabCode').addEventListener('click', function() {
+      this.classList.add('active');
+      document.getElementById('tabPwd').classList.remove('active');
+      document.getElementById('formCode').style.display = '';
+      document.getElementById('formPwd').style.display = 'none';
+    });
+    document.getElementById('tabPwd').addEventListener('click', function() {
+      this.classList.add('active');
+      document.getElementById('tabCode').classList.remove('active');
+      document.getElementById('formCode').style.display = 'none';
+      document.getElementById('formPwd').style.display = '';
+    });
 
-      var btn = this;
-      btn.disabled = true;
-      btn.textContent = '发送中...';
-      showMessage('', 'hidden');
+    // ==== 验证码登录流程 ====
+    var btnCode = document.getElementById('btnCode');
+    btnCode.dataset.defaultText = '获取验证码';
+
+    function resetCodeForm() {
+      codeVerified = false;
+      verifiedPhone = '';
+      document.getElementById('stepCode').style.display = 'none';
+      document.getElementById('stepPassword').style.display = 'none';
+      document.getElementById('phoneCode').disabled = false;
+      btnCode.textContent = '获取验证码';
+      btnCode.disabled = false;
+      if (timer) { clearInterval(timer); timer = null; }
+    }
+
+    // Step 1: 获取验证码
+    btnCode.addEventListener('click', async function() {
+      if (codeVerified) return; // already verified, shouldn't happen
+
+      var phone = document.getElementById('phoneCode').value.trim();
+      if (!phone) { showMsg('msgCode', '请输入手机号', 'error'); return; }
+      if (!/^1[3-9]\d{9}$/.test(phone)) { showMsg('msgCode', '手机号格式不正确', 'error'); return; }
+
+      // 发送验证码
+      var sendBtn = document.getElementById('sendSmsBtn');
+      sendBtn.disabled = true;
+      sendBtn.textContent = '发送中...';
+      showMsg('msgCode', '', 'hidden');
 
       try {
         var res = await fetch('/api/sms', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: phone })
         });
         var data = await res.json();
         if (res.ok && data.success) {
-          showMessage('验证码已发送', 'success');
+          showMsg('msgCode', '验证码已发送', 'success');
+          document.getElementById('stepCode').style.display = '';
+          document.getElementById('phoneCode').disabled = true;
+          btnCode.textContent = '验证并登录';
           countdown = 65;
-          updateCountdown(btn);
-          timer = setInterval(function() { updateCountdown(btn); }, 1000);
+          updateCountdown(sendBtn);
+          timer = setInterval(function() { updateCountdown(sendBtn); }, 1000);
         } else {
-          btn.disabled = false;
-          btn.textContent = '发送验证码';
-          showMessage(data.error || '发送失败', 'error');
+          sendBtn.disabled = false;
+          sendBtn.textContent = '发送验证码';
+          showMsg('msgCode', data.error || '发送失败', 'error');
         }
       } catch (e) {
-        btn.disabled = false;
-        btn.textContent = '发送验证码';
-        showMessage('网络错误，请稍后重试', 'error');
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送验证码';
+        showMsg('msgCode', '网络错误', 'error');
       }
     });
 
     function updateCountdown(btn) {
       if (countdown <= 0) {
-        clearInterval(timer);
+        clearInterval(timer); timer = null;
         btn.disabled = false;
         btn.textContent = '发送验证码';
         return;
       }
-      btn.textContent = countdown + 's 后重发';
+      btn.textContent = countdown + 's';
       countdown--;
     }
 
-    // 登录
-    (function() {
-      var loginBtn = document.getElementById('submitBtn');
-      loginBtn.dataset.defaultText = '登 录';
+    // Step 2: 验证码 + 登录
+    btnCode.addEventListener('click', async function() {
+      if (!codeVerified) {
+        // 还没验证过验证码 → 走验证流程
+        var phone = document.getElementById('phoneCode').value.trim();
+        var code = document.getElementById('codeInput').value.trim();
+        if (!code) { showMsg('msgCode', '请输入验证码', 'error'); return; }
 
-      document.getElementById('loginForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        var phone = document.getElementById('phone').value.trim();
-        var code = document.getElementById('code').value.trim();
-
-        if (!phone) { showMessage('请输入手机号', 'error'); return; }
-        if (!code) { showMessage('请输入验证码', 'error'); return; }
-        if (!/^1[3-9]\d{9}$/.test(phone)) { showMessage('手机号格式不正确', 'error'); return; }
-
-        setLoading(loginBtn, true);
+        setLoading(btnCode, true, '验证中...');
+        showMsg('msgCode', '', 'hidden');
 
         try {
           var res = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone: phone, code: code })
+          });
+          var data = await res.json();
+
+          if (res.ok && data.success) {
+            if (data.needPassword) {
+              // 新用户，需要设置密码
+              codeVerified = true;
+              verifiedPhone = phone;
+              document.getElementById('stepPassword').style.display = '';
+              document.getElementById('codeInput').disabled = true;
+              document.getElementById('sendSmsBtn').disabled = true;
+              btnCode.textContent = '设置密码并登录';
+              btnCode.disabled = false;
+              showMsg('msgCode', '请设置登录密码（后续可用密码登录）', 'success');
+            } else {
+              // 已有用户，直接登录
+              localStorage.setItem('user', JSON.stringify(data.user));
+              localStorage.setItem('token', data.token);
+              var params = new URLSearchParams(window.location.search);
+              var redirect = params.get('redirect');
+              window.location.href = redirect ? decodeURIComponent(redirect) : '/main';
+            }
+          } else {
+            setLoading(btnCode, false, '验证并登录');
+            showMsg('msgCode', data.error || '验证失败', 'error');
+          }
+        } catch (e) {
+          setLoading(btnCode, false, '验证并登录');
+          showMsg('msgCode', '网络错误', 'error');
+        }
+      } else {
+        // 已验证验证码，现在设置密码
+        var pwd = document.getElementById('pwdNew').value;
+        if (!pwd || pwd.length < 6) { showMsg('msgCode', '密码长度不能少于6位', 'error'); return; }
+
+        setLoading(btnCode, true, '设置中...');
+
+        try {
+          var res = await fetch('/api/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: verifiedPhone, code: document.getElementById('codeInput').value, password: pwd })
           });
           var data = await res.json();
 
@@ -139,15 +244,67 @@
             var redirect = params.get('redirect');
             window.location.href = redirect ? decodeURIComponent(redirect) : '/main';
           } else {
-            setLoading(loginBtn, false);
-            showMessage(data.error || '登录失败', 'error');
+            setLoading(btnCode, false, '设置密码并登录');
+            showMsg('msgCode', data.error || '设置失败', 'error');
           }
-        } catch (err) {
-          setLoading(loginBtn, false);
-          showMessage('网络错误，请稍后重试', 'error');
+        } catch (e) {
+          setLoading(btnCode, false, '设置密码并登录');
+          showMsg('msgCode', '网络错误', 'error');
         }
-      });
-    })();
+      }
+    });
+
+    // 重新输入验证码
+    document.getElementById('goBackCode').addEventListener('click', function() {
+      codeVerified = false;
+      document.getElementById('stepPassword').style.display = 'none';
+      document.getElementById('codeInput').disabled = false;
+      document.getElementById('codeInput').value = '';
+      document.getElementById('pwdNew').value = '';
+      document.getElementById('sendSmsBtn').disabled = false;
+      document.getElementById('sendSmsBtn').textContent = '发送验证码';
+      if (timer) { clearInterval(timer); timer = null; }
+      btnCode.textContent = '验证并登录';
+      showMsg('msgCode', '', 'hidden');
+    });
+
+    // ==== 密码登录 ====
+    var btnPwd = document.getElementById('btnPwd');
+    btnPwd.dataset.defaultText = '登 录';
+
+    btnPwd.addEventListener('click', async function() {
+      var phone = document.getElementById('phonePwd').value.trim();
+      var pwd = document.getElementById('pwdLogin').value;
+
+      if (!phone) { showMsg('msgPwd', '请输入手机号', 'error'); return; }
+      if (!/^1[3-9]\d{9}$/.test(phone)) { showMsg('msgPwd', '手机号格式不正确', 'error'); return; }
+      if (!pwd) { showMsg('msgPwd', '请输入密码', 'error'); return; }
+
+      setLoading(btnPwd, true, '登录中...');
+      showMsg('msgPwd', '', 'hidden');
+
+      try {
+        var res = await fetch('/api/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: phone, password: pwd })
+        });
+        var data = await res.json();
+
+        if (res.ok && data.success) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          localStorage.setItem('token', data.token);
+          var params = new URLSearchParams(window.location.search);
+          var redirect = params.get('redirect');
+          window.location.href = redirect ? decodeURIComponent(redirect) : '/main';
+        } else {
+          setLoading(btnPwd, false, '登 录');
+          showMsg('msgPwd', data.error || '登录失败', 'error');
+        }
+      } catch (e) {
+        setLoading(btnPwd, false, '登 录');
+        showMsg('msgPwd', '网络错误', 'error');
+      }
+    });
   </script>
 </body>
 </html>
