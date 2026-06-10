@@ -188,31 +188,24 @@ export default async function onRequest(context) {
       });
     }
 
-    // ===== 仅验证码校验 → 判断是否需要设置密码 =====
+    // ===== 仅验证码校验 → 已有用户直接登录 =====
     if (existingUser) {
-      // 已有用户，直接登录
       try { await apiCall(context, 'DELETE', BASE + '/sms_codes/documents/' + encodeURIComponent(phone)); } catch (e) {}
 
       var uid2 = existingUser._id;
       var secret3 = getEnv(context, 'AUTH_SECRET') || 'mcs_default_secret_2026';
       var token3 = await generateToken(uid2, secret3);
 
-      var hasPw = !!(existingUser.salt && existingUser.password_hash);
       return json({
         success: true,
         message: '登录成功',
         token: token3,
         user: { id: uid2, phone: phone },
-        hasPassword: hasPw,
       });
     }
 
-    // 新用户，需要设置密码
-    return json({
-      success: true,
-      needPassword: true,
-      user: { id: phone, phone: phone },
-    });
+    // 用户不存在
+    return json({ error: '账号不存在，请先注册' }, 401);
 
   } catch (err) {
     return json({ error: err.message }, 500);
