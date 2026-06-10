@@ -256,6 +256,16 @@ footer strong {
   text-align: center; font-size: 0.82rem; color: #8e8e9a; margin-top: 16px;
 }
 
+/* Footer */
+.login-footer {
+  text-align: center; margin-top: 24px; font-size: 0.9rem; color: #8e8e9a;
+}
+.login-footer a {
+  color: #667eea; font-weight: 600; cursor: pointer; text-decoration: none;
+  margin-left: 4px; transition: color 0.15s;
+}
+.login-footer a:hover { color: #4f5fd9; text-decoration: underline; }
+
 @media (max-width: 480px) {
   .login-card { padding: 32px 20px 24px; border-radius: 14px; }
   .login-header h1 { font-size: 1.2rem; }
