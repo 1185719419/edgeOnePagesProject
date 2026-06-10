@@ -11,7 +11,7 @@
     <div class="login-card">
       <div class="login-header">
         <h1 id="loginTitle">登录</h1>
-        <p class="login-subtitle" id="loginSub">基于艾宾浩斯记忆曲线的任务管理日历</p>
+        <p class="login-subtitle">基于艾宾浩斯记忆曲线的任务管理日历</p>
       </div>
 
       <div class="tab-row">
@@ -19,27 +19,29 @@
         <button class="tab-btn" id="tabPwd">密码登录</button>
       </div>
 
+      <!-- 验证码登录 -->
       <div id="formCode" class="login-form">
         <div class="form-group">
           <label>手机号</label>
           <input type="tel" id="phoneCode" placeholder="请输入手机号" autocomplete="tel" maxlength="11">
         </div>
-        <div class="form-group" id="stepCode">
+        <div class="form-group">
           <label>验证码</label>
           <div class="sms-row">
             <input type="text" id="codeInput" placeholder="请输入验证码" autocomplete="one-time-code" maxlength="6" inputmode="numeric">
-            <button type="button" id="sendSmsBtn" class="sms-btn">发送验证码</button>
+            <button type="button" id="sendSmsBtn" class="sms-btn">获取验证码</button>
           </div>
         </div>
-        <div class="form-group" id="stepPassword">
-          <label>设置登录密码</label>
-          <input type="password" id="pwdNew" placeholder="请设置6位以上密码" minlength="6">
-          <span class="step-hint">验证码验证通过，请设置密码完成注册</span>
+        <div class="form-group" id="stepPassword" style="display:none;">
+          <label>设置密码</label>
+          <input type="password" id="pwdNew" placeholder="请设置6位以上登录密码" minlength="6">
+          <span class="step-hint">首次登录需设置密码，后续可用密码或验证码登录</span>
         </div>
         <div id="msgCode" class="message hidden"></div>
-        <button type="button" id="btnCode" class="login-btn">获取验证码</button>
+        <button type="button" id="btnCode" class="login-btn">登录 / 注册</button>
       </div>
 
+      <!-- 密码登录 -->
       <div id="formPwd" class="login-form" style="display:none;">
         <div class="form-group">
           <label>手机号</label>
@@ -51,7 +53,7 @@
         </div>
         <div id="msgPwd" class="message hidden"></div>
         <button type="button" id="btnPwd" class="login-btn">登 录</button>
-        <p class="form-hint">未设置密码？切换至「验证码登录」标签</p>
+        <p class="form-hint">未设置过密码？切换到「验证码登录」先登录再设置</p>
       </div>
     </div>
   </div>
@@ -59,21 +61,22 @@
   <script>
     var countdown = 0;
     var timer = null;
-    var codeVerified = false;
-    var verifiedPhone = '';
+    var codeSent = false;
+    var phoneForCode = '';
 
     function showMsg(elId, text, type) {
       var el = document.getElementById(elId);
       el.textContent = text;
       el.className = 'message ' + (type || 'hidden');
     }
+
     function setLoading(btn, loading, text) {
       btn.disabled = loading;
       if (text) btn.textContent = text;
       if (!loading && btn.dataset.defaultText) btn.textContent = btn.dataset.defaultText;
     }
 
-    // Tab 切换
+    // ===== Tab 切换 =====
     document.getElementById('tabCode').addEventListener('click', function() {
       this.classList.add('active'); document.getElementById('tabPwd').classList.remove('active');
       document.getElementById('formCode').style.display = ''; document.getElementById('formPwd').style.display = 'none';
@@ -83,84 +86,96 @@
       document.getElementById('formCode').style.display = 'none'; document.getElementById('formPwd').style.display = '';
     });
 
-    // ===== 验证码登录 =====
-    var btnCode = document.getElementById('btnCode');
-    btnCode.dataset.defaultText = '获取验证码';
-
-    btnCode.addEventListener('click', async function() {
+    // ===== 发送验证码 =====
+    var sendBtn = document.getElementById('sendSmsBtn');
+    sendBtn.addEventListener('click', async function() {
       var phone = document.getElementById('phoneCode').value.trim();
+      if (!phone) { showMsg('msgCode', '请输入手机号', 'error'); return; }
+      if (!/^1[3-9]\d{9}$/.test(phone)) { showMsg('msgCode', '手机号格式不正确', 'error'); return; }
 
-      if (!codeVerified) {
-        if (!phone) { showMsg('msgCode', '请输入手机号', 'error'); return; }
-        if (!/^1[3-9]\d{9}$/.test(phone)) { showMsg('msgCode', '手机号格式不正确', 'error'); return; }
+      sendBtn.disabled = true; sendBtn.textContent = '发送中...';
+      showMsg('msgCode', '', 'hidden');
 
-        // Step 1: 发送验证码（还没显示验证码输入框时）
-        if (document.getElementById('stepCode').style.display === 'none' || !document.getElementById('stepCode').style.display) {
-          var sendBtn = document.getElementById('sendSmsBtn');
-          sendBtn.disabled = true; sendBtn.textContent = '发送中...';
-          showMsg('msgCode', '', 'hidden');
-          try {
-            var res = await fetch('/api/sms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone }) });
-            var data = await res.json();
-            if (res.ok && data.success) {
-              showMsg('msgCode', '验证码已发送', 'success');
-              document.getElementById('stepCode').style.display = '';
-              document.getElementById('phoneCode').disabled = true;
-              btnCode.textContent = '验证并登录';
-              countdown = 65; updateCountdown(sendBtn);
-              timer = setInterval(function() { updateCountdown(sendBtn); }, 1000);
-            } else { sendBtn.disabled = false; sendBtn.textContent = '发送验证码'; showMsg('msgCode', data.error || '发送失败', 'error'); }
-          } catch (e) { sendBtn.disabled = false; sendBtn.textContent = '发送验证码'; showMsg('msgCode', '网络错误', 'error'); }
-          return;
+      try {
+        var res = await fetch('/api/sms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone }) });
+        var data = await res.json();
+        if (res.ok && data.success) {
+          codeSent = true; phoneForCode = phone;
+          showMsg('msgCode', '验证码已发送，5分钟内有效', 'success');
+          countdown = 65; updateCountdown();
+          timer = setInterval(updateCountdown, 1000);
+        } else {
+          sendBtn.disabled = false; sendBtn.textContent = '获取验证码';
+          var msg = data.error || '发送失败';
+          if (msg.indexOf('频率') !== -1 || msg.indexOf('频繁') !== -1 || msg.indexOf('frequency') !== -1) {
+            msg = '操作太频繁，请稍后再试';
+          }
+          showMsg('msgCode', msg, 'error');
         }
-
-        // Step 2: 验证验证码
-        var code = document.getElementById('codeInput').value.trim();
-        if (!code) { showMsg('msgCode', '请输入验证码', 'error'); return; }
-        setLoading(btnCode, true, '验证中...');
-        try {
-          var res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone, code: code }) });
-          var data = await res.json();
-          if (res.ok && data.success) {
-            if (data.needPassword) {
-              codeVerified = true; verifiedPhone = phone;
-              document.getElementById('stepPassword').style.display = '';
-              document.getElementById('codeInput').disabled = true;
-              document.getElementById('sendSmsBtn').disabled = true;
-              btnCode.textContent = '设置密码并登录'; btnCode.disabled = false;
-              document.getElementById('loginTitle').textContent = '创建账号';
-              document.getElementById('loginSub').textContent = '首次登录，请设置登录密码完成注册';
-              showMsg('msgCode', '请设置登录密码，后续也可用验证码登录', 'success');
-            } else {
-              localStorage.setItem('user', JSON.stringify(data.user));
-              localStorage.setItem('token', data.token);
-              var p = new URLSearchParams(window.location.search);
-              window.location.href = p.get('redirect') ? decodeURIComponent(p.get('redirect')) : '/main';
-            }
-          } else { setLoading(btnCode, false, '验证并登录'); showMsg('msgCode', data.error || '验证失败', 'error'); }
-        } catch (e) { setLoading(btnCode, false, '验证并登录'); showMsg('msgCode', '网络错误', 'error'); }
-      } else {
-        // Step 3: 设置密码
-        var pwd = document.getElementById('pwdNew').value;
-        if (!pwd || pwd.length < 6) { showMsg('msgCode', '密码长度不能少于6位', 'error'); return; }
-        setLoading(btnCode, true, '设置中...');
-        try {
-          var res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: verifiedPhone, code: document.getElementById('codeInput').value, password: pwd }) });
-          var data = await res.json();
-          if (res.ok && data.success) {
-            localStorage.setItem('user', JSON.stringify(data.user));
-            localStorage.setItem('token', data.token);
-            var p = new URLSearchParams(window.location.search);
-            window.location.href = p.get('redirect') ? decodeURIComponent(p.get('redirect')) : '/main';
-          } else { setLoading(btnCode, false, '设置密码并登录'); showMsg('msgCode', data.error || '设置失败', 'error'); }
-        } catch (e) { setLoading(btnCode, false, '设置密码并登录'); showMsg('msgCode', '网络错误', 'error'); }
+      } catch (e) {
+        sendBtn.disabled = false; sendBtn.textContent = '获取验证码';
+        showMsg('msgCode', '网络错误，请稍后重试', 'error');
       }
     });
 
-    function updateCountdown(btn) {
-      if (countdown <= 0) { clearInterval(timer); timer = null; btn.disabled = false; btn.textContent = '重新发送'; return; }
-      btn.textContent = countdown + 's'; countdown--;
+    function updateCountdown() {
+      if (countdown <= 0) { clearInterval(timer); timer = null; sendBtn.disabled = false; sendBtn.textContent = '重新发送'; return; }
+      sendBtn.textContent = countdown + 's'; countdown--;
     }
+
+    // ===== 验证码登录/注册 =====
+    var btnCode = document.getElementById('btnCode');
+    btnCode.dataset.defaultText = '登录 / 注册';
+
+    btnCode.addEventListener('click', async function() {
+      var phone = document.getElementById('phoneCode').value.trim();
+      var code = document.getElementById('codeInput').value.trim();
+
+      if (!phone) { showMsg('msgCode', '请输入手机号', 'error'); return; }
+      if (!/^1[3-9]\d{9}$/.test(phone)) { showMsg('msgCode', '手机号格式不正确', 'error'); return; }
+      if (!codeSent) { showMsg('msgCode', '请先获取验证码', 'error'); return; }
+      if (!code) { showMsg('msgCode', '请输入验证码', 'error'); return; }
+
+      // 如果已进入设置密码步骤
+      if (document.getElementById('stepPassword').style.display !== 'none') {
+        var pwd = document.getElementById('pwdNew').value;
+        if (!pwd || pwd.length < 6) { showMsg('msgCode', '密码长度不能少于6位', 'error'); return; }
+        setLoading(btnCode, true, '注册中...');
+        try {
+          var res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone, code: code, password: pwd }) });
+          var data = await res.json();
+          if (res.ok && data.success) { loginSuccess(data); }
+          else { setLoading(btnCode, false, '登录 / 注册'); showMsg('msgCode', data.error || '注册失败', 'error'); }
+        } catch (e) { setLoading(btnCode, false, '登录 / 注册'); showMsg('msgCode', '网络错误', 'error'); }
+        return;
+      }
+
+      // 正常登录流程
+      setLoading(btnCode, true, '验证中...');
+      showMsg('msgCode', '', 'hidden');
+
+      try {
+        var res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone, code: code }) });
+        var data = await res.json();
+        if (res.ok && data.success) {
+          if (data.needPassword) {
+            // 新用户，显示密码设置
+            document.getElementById('stepPassword').style.display = '';
+            document.getElementById('loginTitle').textContent = '创建账号';
+            document.getElementById('phoneCode').disabled = true;
+            document.getElementById('codeInput').disabled = true;
+            sendBtn.disabled = true;
+            btnCode.textContent = '完成注册'; btnCode.disabled = false;
+            showMsg('msgCode', '首次登录，请设置密码完成注册', 'success');
+          } else {
+            loginSuccess(data);
+          }
+        } else {
+          setLoading(btnCode, false, '登录 / 注册');
+          showMsg('msgCode', data.error || '验证失败', 'error');
+        }
+      } catch (e) { setLoading(btnCode, false, '登录 / 注册'); showMsg('msgCode', '网络错误', 'error'); }
+    });
 
     // ===== 密码登录 =====
     var btnPwd = document.getElementById('btnPwd');
@@ -175,14 +190,17 @@
       try {
         var res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone, password: pwd }) });
         var data = await res.json();
-        if (res.ok && data.success) {
-          localStorage.setItem('user', JSON.stringify(data.user));
-          localStorage.setItem('token', data.token);
-          var p = new URLSearchParams(window.location.search);
-          window.location.href = p.get('redirect') ? decodeURIComponent(p.get('redirect')) : '/main';
-        } else { setLoading(btnPwd, false, '登 录'); showMsg('msgPwd', data.error || '登录失败', 'error'); }
+        if (res.ok && data.success) { loginSuccess(data); }
+        else { setLoading(btnPwd, false, '登 录'); showMsg('msgPwd', data.error || '登录失败', 'error'); }
       } catch (e) { setLoading(btnPwd, false, '登 录'); showMsg('msgPwd', '网络错误', 'error'); }
     });
+
+    function loginSuccess(data) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', data.token);
+      var p = new URLSearchParams(window.location.search);
+      window.location.href = p.get('redirect') ? decodeURIComponent(p.get('redirect')) : '/main';
+    }
   </script>
 </body>
 </html>
